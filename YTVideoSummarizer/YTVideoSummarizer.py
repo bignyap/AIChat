@@ -46,8 +46,8 @@ def audio_to_transcript(file: str) -> str:
     result = model.transcribe(file)
     transcribed_text = result["text"]
 
-    with open(filename, "w") as file:
-        file.write(transcribed_text)
+    with open(filename, "w", encoding='utf-8') as file1:
+        file1.write(transcribed_text)
 
     return transcribed_text
 
@@ -161,9 +161,6 @@ def get_transcripts(query: str, howmany: int = 5) -> List[Dict[str, str]]:
 
 
 if __name__ == "__main__":
-    # QUERY = str(input("What do you want to search: "))
-    # HOW_MANY = int(input("How many video do you want: "))
-    # # print(get_transcript(QUERY, HOW_MANY))
-    # print(download_audios(QUERY, HOW_MANY))
-    # print(audio_to_transcript('./sample.mp3'))
-    print(audio_to_transcript(r'D:\LLM\YTVideoSummarizer\sample.mp3'))
+    QUERY = str(input("What do you want to search: "))
+    HOW_MANY = int(input("How many video do you want: "))
+    print(get_transcripts(QUERY, HOW_MANY))
