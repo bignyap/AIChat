@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
-from my_llm import companyname
+from ComapnyName import ComapnyName
 
 some_file_path = "sample.mp4"
 app = FastAPI()
@@ -21,7 +21,7 @@ def stream():
 
 @app.get("/companyname")
 def company_name(product: str, howmany:int = 1):
-    res =  companyname.llm_company_name(product, howmany)
+    res =  ComapnyName.llm_company_name(product, howmany)
     return res
 
 
