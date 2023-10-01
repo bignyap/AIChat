@@ -1,12 +1,11 @@
+from pydantic import BaseModel, Field
+from typing import List
+
 from langchain.llms import OpenAI
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 
 from langchain.output_parsers import PydanticOutputParser, OutputFixingParser
-from pydantic import BaseModel, Field, validator
-from typing import List
-
-import json
 
 from dotenv import load_dotenv
 
@@ -40,6 +39,6 @@ def llm_company_name(product: str, howmany: int = 1):
 
 
 if __name__ == "__main__":
-    product_name = str(input("What is the product name: "))
+    productName = str(input("What is the product name: "))
     howmany = int(input("How many name you want: "))
-    print(llm_company_name(product_name, howmany))
+    print(llm_company_name(productName, howmany))

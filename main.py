@@ -1,28 +1,20 @@
-from fastapi import FastAPI
-from fastapi.responses import StreamingResponse
-from ComapnyName import ComapnyName
+from fastapi import FastAPI, UploadFile
+from CompanyName import CompanyName
+from Summarizer import Summarizer
 
-some_file_path = "sample.mp4"
 app = FastAPI()
 
-@app.get("/")
-async def title():
-    return "Hello World!"
-
-
-@app.get("/stream")
-def stream():
-    def iterfile():
-        with open(some_file_path, mode="rb") as file_like:
-            yield from file_like
-
-    return StreamingResponse(iterfile(), media_type="video/mp4")
-
-
-@app.get("/companyname")
+@app.get("/getCompanyName")
 def company_name(product: str, howmany:int = 1):
-    res =  ComapnyName.llm_company_name(product, howmany)
+    return CompanyName.llm_company_name(product, howmany)
+
+
+@app.post("/summarize")
+async def llm_summarize(file: UploadFile):
+    filepath = await Summarizer.PDFReader(file)
+    res =  Summarizer.PDFSummarizer(filepath)
     return res
+    
 
 
 
