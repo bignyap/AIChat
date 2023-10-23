@@ -1,6 +1,7 @@
 # core python libraries for handling datetime, etc.
 from datetime import datetime, timedelta
 from typing import Annotated
+import os
 
 # fastapi lib
 from fastapi import Depends, FastAPI, HTTPException, status
@@ -16,15 +17,39 @@ from passlib.context import CryptContext
 from pydantic import BaseModel
 
 # Read Env variables
-from dotenv import load_dotenv
+from dotenv import load_dotenv, dotenv_values, find_dotenv
 
+# for MySQL related operations
+import mysql.connector
+from mysql.connector import Error
+
+ # take environment variables from .env
+load_dotenv(".env") 
+
+
+SECRET_KEY = os.getenv("SECRET_KEY")
+ALORITHM = os.getenv("ALORITHM")
+ACCESS_TOKEN_EXPIRE_MINUTES = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")
+
+MySQL_HOST = os.getenv("MySQL_HOST")
+MySQL_Username = os.getenv("MySQL_Username")
+MySQL_Password = os.getenv("MySQL_Password")
+MySQL_DB = os.getenv("MySQL_DB")
+
+
+sqlconn = mysql.connector.connect(
+  host = MySQL_HOST,
+  user = MySQL_Username,
+  password = MySQL_Password,
+  database = MySQL_DB
+)
 
 class Token(BaseModel):
     access_token: str
     token_type: str
 
 class TokenData(BaseModel):
-    username: str
+    username: str | None = None
 
 class User(BaseModel):
     username: str
@@ -47,13 +72,17 @@ def verify_password(plain_password, hashed_password):
 def get_password_hash(password):
     return pwd_context.hash(password)
 
-def get_user(db, username: str):
-    if username in db:
-        user_dict = db[username]
-        return UserInDB(**user_dict)
+def get_user(username: str):
+    # check db for username and password
+    cur = sqlconn.cursor(dictionary=True)
+    res = cur.execute("SELECT * FROM user WHERE username=%s", (username))
 
-def authenticate_user(fake_db, username: str, password: str):
-    user = get_user(fake_db, username)
+    if res > 0:
+        user_row = cur.fetchone()
+        return user_row
+
+def authenticate_user(username: str, password: str):
+    user = get_user(username)
     if not user:
         return False
     if not verify_password(password, user.hashed_password):
@@ -86,7 +115,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
         token_data = TokenData(username=username)
     except JWTError:
         raise credentials_exception
-    user = get_user(fake_users_db, username=token_data.username)
+    user = get_user(token_data.username)
     if user is None:
         raise credentials_exception
     return user
@@ -102,7 +131,7 @@ async def get_current_active_user(
 async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
 ):
-    user = authenticate_user(fake_users_db, form_data.username, form_data.password)
+    user = authenticate_user(form_data.username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
