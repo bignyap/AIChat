@@ -7,5 +7,7 @@ CREATE TABLE user (
   disabled BOOLEAN NOT NULL DEFAULT TRUE
 );
 
+/*ALTER USER 'user'@'host' IDENTIFIED WITH 'mysql_native_password' BY 'password';*/
+
 /*INSERT INTO user (username, email, full_name, hashed_password) VALUES 
 ('llm', 'llm@llm.com', 'LLM User', 'llm');*/
