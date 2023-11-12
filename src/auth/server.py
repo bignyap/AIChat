@@ -86,39 +86,47 @@ def get_password_hash(password):
 
 def get_user(username: str):
     '''Given the username, get the details from database'''
-    # check db for username and password
-    cur = sqlconn.cursor(dictionary=True)
-    res = cur.execute("SELECT * FROM user WHERE username=%s", (username))
-
-    if res > 0:
-        user_row = cur.fetchone()
-        return user_row
-    return None
+    try:
+        with sqlconn.cursor(dictionary=True) as cur:
+            cur.execute("SELECT * FROM user WHERE username=%s", (username,))
+            user_row = cur.fetchone()
+            return user_row
+    except Error as e:
+         # Handle the error or log it
+        print(f"Error in reset_password: {e}")
+        return None
 
 
 def reset_password(username: str, password: str):
     '''Given the username, update the password'''
-    try:
-        cur = sqlconn.cursor(dictionary=True)
-        # Update the password
-        hashed_password = get_password_hash(password)
-        cur.execute(
-            "UPDATE user SET hashed_password = %s WHERE username=%s", 
-            (hashed_password, username)
+    user = get_user(username)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
         )
+    try:
+        with sqlconn.cursor(dictionary=True) as cur:
+            # Update the password
+            hashed_password = get_password_hash(password)
+            _ = cur.execute(
+                "UPDATE user SET hashed_password = %s WHERE username=%s",
+                (hashed_password, username)
+            )
         # Commit the changes
         sqlconn.commit()
         return True
-    except Error:
+    except Error as e:
+        # Handle the error or log it
+        print(f"Error in reset_password: {e}")
         return False
-
 
 def authenticate_user(username: str, password: str):
     '''Authenticate the user'''
     user = get_user(username)
     if not user:
         return False
-    if not verify_password(password, user.hashed_password):
+    if not verify_password(password, user['hashed_password']):
         return False
     return user
 
@@ -157,25 +165,19 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
 
 
 @app.post("/register", response_model=TokenData)
-async def restister_in_app(
+async def register_in_app(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
 ):
     '''Register for the application'''
-    username = form_data.username
-    password = form_data.password
-    user = get_user(username)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-        )
-    reset = reset_password(username, password)
+    uname = form_data.username
+    pwd = form_data.password
+    reset = reset_password(uname, pwd)
     if not reset:
         raise HTTPException(
             status_code=500, 
             detail="Could not register the user"
         )
-    return {"username": username}
+    return {"username": uname}
 
 @app.post("/token", response_model=Token)
 async def login_for_access_token(
@@ -183,6 +185,7 @@ async def login_for_access_token(
 ):
     '''Access token api'''
     user = authenticate_user(form_data.username, form_data.password)
+    print(user)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -190,6 +193,7 @@ async def login_for_access_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    print(access_token_expires)
     access_token = create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
     )
