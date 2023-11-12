@@ -17,18 +17,18 @@ from passlib.context import CryptContext
 from pydantic import BaseModel
 
 # Read Env variables
-from dotenv import load_dotenv, dotenv_values, find_dotenv
+from dotenv import load_dotenv
 
 # for MySQL related operations
 import mysql.connector
 from mysql.connector import Error
 
  # take environment variables from .env
-load_dotenv(".env") 
+load_dotenv(".env")
 
 
 SECRET_KEY = os.getenv("SECRET_KEY")
-ALORITHM = os.getenv("ALORITHM")
+ALGORITHM = os.getenv("ALGORITHM")
 ACCESS_TOKEN_EXPIRE_MINUTES = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")
 
 MySQL_HOST = os.getenv("MySQL_HOST")
@@ -45,20 +45,27 @@ sqlconn = mysql.connector.connect(
 )
 
 class Token(BaseModel):
+    '''Represents class with access_token and token_type'''
     access_token: str
     token_type: str
 
 class TokenData(BaseModel):
+    '''Represents TokenData class'''
     username: str | None = None
 
+
 class User(BaseModel):
+    '''Represents User class'''
     username: str
     email: str|None = None
     full_name: str|None = None
     disabled: bool|None = None
 
+
 class UserInDB(User):
+    '''Represents UserInDB class'''
     hashed_password: str
+
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -66,13 +73,19 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 app = FastAPI()
 
+
 def verify_password(plain_password, hashed_password):
+    '''Verify plain password with hashed password'''
     return pwd_context.verify(plain_password, hashed_password)
 
+
 def get_password_hash(password):
+    '''Convert password to hashed version'''
     return pwd_context.hash(password)
 
+
 def get_user(username: str):
+    '''Given the username, get the details from database'''
     # check db for username and password
     cur = sqlconn.cursor(dictionary=True)
     res = cur.execute("SELECT * FROM user WHERE username=%s", (username))
@@ -80,8 +93,28 @@ def get_user(username: str):
     if res > 0:
         user_row = cur.fetchone()
         return user_row
+    return None
+
+
+def reset_password(username: str, password: str):
+    '''Given the username, update the password'''
+    try:
+        cur = sqlconn.cursor(dictionary=True)
+        # Update the password
+        hashed_password = get_password_hash(password)
+        cur.execute(
+            "UPDATE user SET hashed_password = %s WHERE username=%s", 
+            (hashed_password, username)
+        )
+        # Commit the changes
+        sqlconn.commit()
+        return True
+    except Error:
+        return False
+
 
 def authenticate_user(username: str, password: str):
+    '''Authenticate the user'''
     user = get_user(username)
     if not user:
         return False
@@ -91,6 +124,7 @@ def authenticate_user(username: str, password: str):
 
 
 def create_access_token(data: dict, expires_delta: timedelta | None = None):
+    '''Get an access token once anuthenticated'''
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
@@ -102,6 +136,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
 
 
 async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
+    '''Get the currently logged in user'''
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -113,24 +148,40 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
         if username is None:
             raise credentials_exception
         token_data = TokenData(username=username)
-    except JWTError:
-        raise credentials_exception
+    except JWTError as e:
+        raise credentials_exception from e
     user = get_user(token_data.username)
     if user is None:
         raise credentials_exception
     return user
 
-async def get_current_active_user(
-    current_user: Annotated[User, Depends(get_current_user)]
+
+@app.post("/register", response_model=TokenData)
+async def restister_in_app(
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
 ):
-    if current_user.disabled:
-        raise HTTPException(status_code=400, detail="Inactive user")
-    return current_user
+    '''Register for the application'''
+    username = form_data.username
+    password = form_data.password
+    user = get_user(username)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+        )
+    reset = reset_password(username, password)
+    if not reset:
+        raise HTTPException(
+            status_code=500, 
+            detail="Could not register the user"
+        )
+    return {"username": username}
 
 @app.post("/token", response_model=Token)
 async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
 ):
+    '''Access token api'''
     user = authenticate_user(form_data.username, form_data.password)
     if not user:
         raise HTTPException(
@@ -143,9 +194,3 @@ async def login_for_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
-
-@app.get("/users/me/", response_model=User)
-async def read_users_me(
-    current_user: Annotated[User, Depends(get_current_active_user)]
-):
-    return current_user
