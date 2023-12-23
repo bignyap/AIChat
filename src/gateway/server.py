@@ -5,6 +5,7 @@ from fastapi import FastAPI, Request, UploadFile
 from auth_svc import access
 from company_name import company_name
 from pdf_summarizer import pdf_summarizer
+from audio_to_text import audio_to_text
 
 app = FastAPI()
 

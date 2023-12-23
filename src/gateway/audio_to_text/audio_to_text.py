@@ -5,7 +5,7 @@ import os
 import whisper
 
 
-def audio_to_transcript(file: str) -> str:
+def audio_to_text(file: str) -> str:
     """
     This is a docstring for audio_to_transcript.
 
@@ -33,4 +33,4 @@ def audio_to_transcript(file: str) -> str:
 
 if __name__ == "__main__":
     AUDIO_FILEPATH = str(input("Audio filepath: "))
-    print(audio_to_transcript(AUDIO_FILEPATH))
+    print(audio_to_text(AUDIO_FILEPATH))
