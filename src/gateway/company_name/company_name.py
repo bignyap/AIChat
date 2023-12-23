@@ -1,5 +1,8 @@
-from pydantic import BaseModel, Field
+''' doc string for company name '''
+
 from typing import List
+
+from pydantic import BaseModel, Field
 
 from langchain.llms import OpenAI
 from langchain.chains import LLMChain
@@ -13,10 +16,13 @@ load_dotenv()
 
 
 class CompanyName(BaseModel):
+    ''' company name model '''
     company_names: List[str] = Field(description="list of names of companies")
 
 
 def llm_company_name(product: str, howmany: int = 1):
+
+    ''' Company Name from LLM '''
 
     llm = OpenAI(temperature=0.9)
     prompt = PromptTemplate(
@@ -39,6 +45,6 @@ def llm_company_name(product: str, howmany: int = 1):
 
 
 if __name__ == "__main__":
-    productName = str(input("What is the product name: "))
-    howmany = int(input("How many name you want: "))
-    print(llm_company_name(productName, howmany))
+    PRODUCT_NAME = str(input("What is the product name: "))
+    HOW_MANY = int(input("How many name you want: "))
+    print(llm_company_name(PRODUCT_NAME, HOW_MANY))
