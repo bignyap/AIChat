@@ -1,41 +1,13 @@
 '''
 Module doc string
 '''
-
-import os
-import requests
-
 from fastapi import FastAPI, Request, UploadFile, HTTPException
 
+from authorize import authorize
 from company_name import company_name
 from pdf_summarizer import pdf_summarizer
 
-AUTH_SVC_ADDRESS = os.getenv("AUTH_SVC_ADDRESS")
-TIMEOUT_LIMIT = int(os.getenv("TIMEOUT_LIMIT"))
-
 app = FastAPI()
-
-async def authenticate(request: Request) -> str:
-    '''
-    Authenticate the User
-    This function gets the Authorization header from the request, calls 
-    the authenticating service, and return the token if valid.
-    '''
-
-    token = request.headers.get("Authorization")
-    if not token:
-        raise HTTPException(status_code=401, detail="Unauthorized: Token missing")
-
-    response = requests.post(
-        f"{AUTH_SVC_ADDRESS}/validate", 
-        headers={"Authorization": token},
-        timeout = TIMEOUT_LIMIT
-    )
-    
-    if response.status_code != 200:
-        raise HTTPException(status_code=401, detail="Unauthorized: Invalid token")
-    
-    return token
 
 @app.post("/summarize")
 async def llm_summarize(request: Request, file: UploadFile) -> str:
@@ -45,7 +17,7 @@ async def llm_summarize(request: Request, file: UploadFile) -> str:
     """
 
     try:
-        _ = await authenticate(request)
+        _ = await authorize(request)
 
         filepath = await pdf_summarizer.pdf_reader(file)
         res = pdf_summarizer.pdf_summarizer(filepath)
@@ -65,7 +37,7 @@ async def llm_name(request: Request, product: str, howmany:int = 1) -> str:
     """
 
     try:
-        _ = await authenticate(request)
+        _ = await authorize(request)
 
         res = company_name.llm_company_name(product, howmany)
         return res
