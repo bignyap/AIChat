@@ -27,9 +27,9 @@ from mysql.connector import Error
 load_dotenv(".env")
 
 
-SECRET_KEY = os.getenv("SECRET_KEY")
-ALGORITHM = os.getenv("ALGORITHM")
-ACCESS_TOKEN_EXPIRE_MINUTES = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")
+JWT_SECRET = os.getenv("JWT_SECRET")
+JWT_ALGORITHM = os.getenv("JWT_ALGORITHM")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
 
 MySQL_HOST = os.getenv("MySQL_HOST")
 MySQL_Username = os.getenv("MySQL_Username")
@@ -93,7 +93,7 @@ def get_user(username: str):
             return user_row
     except Error as e:
          # Handle the error or log it
-        print(f"Error in reset_password: {e}")
+        print(f"Error in getting user details: {e}")
         return None
 
 
@@ -139,7 +139,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None):
     else:
         expire = datetime.utcnow() + timedelta(minutes=15)
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, JWT_SECRET, algorithm=JWT_ALGORITHM)
     return encoded_jwt
 
 
@@ -151,7 +151,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
             raise credentials_exception
@@ -164,20 +164,20 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
     return user
 
 
-@app.post("/register", response_model=TokenData)
-async def register_in_app(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
-):
-    '''Register for the application'''
-    uname = form_data.username
-    pwd = form_data.password
-    reset = reset_password(uname, pwd)
-    if not reset:
-        raise HTTPException(
-            status_code=500, 
-            detail="Could not register the user"
-        )
-    return {"username": uname}
+# @app.post("/register", response_model=TokenData)
+# async def register_in_app(
+#     form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
+# ):
+#     '''Register for the application'''
+#     uname = form_data.username
+#     pwd = form_data.password
+#     reset = reset_password(uname, pwd)
+#     if not reset:
+#         raise HTTPException(
+#             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+#             detail="Could not register the user"
+#         )
+#     return {"username": uname}
 
 
 @app.post("/validate")
@@ -188,18 +188,23 @@ async def validate(
     encoded_jwt = req.headers["Authorization"]
 
     if not encoded_jwt:
-        return "missing credentials", 401
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing credentials"
+        )
 
     encoded_jwt = encoded_jwt.split(" ")[1]
 
     try:
         decoded = jwt.decode(
-            encoded_jwt, os.environ.get("JWT_SECRET"), algorithms=["HS256"]
+            encoded_jwt, JWT_SECRET, algorithms=[JWT_ALGORITHM]
         )
-    except Error:
-        return "not authorized", 403
-
-    return decoded, 200
+        return decoded
+    except JWTError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not authorized"
+        ) from exc
 
 
 @app.post("/login", response_model=Token)
