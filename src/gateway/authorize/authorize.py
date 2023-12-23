@@ -21,7 +21,7 @@ async def authorize(request: Request) -> str:
         raise HTTPException(status_code=401, detail="Unauthorized: Token missing")
 
     response = requests.post(
-        f"{AUTH_SVC_ADDRESS}/validate", 
+        f"{AUTH_SVC_ADDRESS}/authorize", 
         headers={"Authorization": token},
         timeout = TIMEOUT_LIMIT
     )

@@ -1,186 +1,32 @@
-# core python libraries for handling datetime, etc.
-from datetime import datetime, timedelta
-from typing import Annotated
+''' Authentication Module '''
+
 import os
+from datetime import timedelta
+from typing import Annotated
 
 # fastapi lib
 from fastapi import Depends, FastAPI, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 
-# generate and verify jwt token
-from jose import JWTError, jwt
-
-# hashing and verify passwords
-from passlib.context import CryptContext
-
 # pydantic base model
 from pydantic import BaseModel
 
-# Read Env variables
-from dotenv import load_dotenv
+from jose import JWTError
 
-# for MySQL related operations
-import mysql.connector
-from mysql.connector import Error
+from authenticate import authenticate
 
- # take environment variables from .env
-load_dotenv(".env")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
-
-JWT_SECRET = os.getenv("JWT_SECRET")
-JWT_ALGORITHM = os.getenv("JWT_ALGORITHM")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
-
-MySQL_HOST = os.getenv("MySQL_HOST")
-MySQL_Username = os.getenv("MySQL_Username")
-MySQL_Password = os.getenv("MySQL_Password")
-MySQL_DB = os.getenv("MySQL_DB")
-
-
-sqlconn = mysql.connector.connect(
-  host = MySQL_HOST,
-  user = MySQL_Username,
-  password = MySQL_Password,
-  database = MySQL_DB
-)
 
 class Token(BaseModel):
     '''Represents class with access_token and token_type'''
     access_token: str
     token_type: str
 
-class TokenData(BaseModel):
-    '''Represents TokenData class'''
-    username: str | None = None
-
-
-class User(BaseModel):
-    '''Represents User class'''
-    username: str
-    email: str|None = None
-    full_name: str|None = None
-    disabled: bool|None = None
-
-
-class UserInDB(User):
-    '''Represents UserInDB class'''
-    hashed_password: str
-
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
 app = FastAPI()
 
-
-def verify_password(plain_password, hashed_password):
-    '''Verify plain password with hashed password'''
-    return pwd_context.verify(plain_password, hashed_password)
-
-
-def get_password_hash(password):
-    '''Convert password to hashed version'''
-    return pwd_context.hash(password)
-
-
-def get_user(username: str):
-    '''Given the username, get the details from database'''
-    try:
-        with sqlconn.cursor(dictionary=True) as cur:
-            cur.execute("SELECT * FROM user WHERE username=%s", (username,))
-            user_row = cur.fetchone()
-            return user_row
-    except Error as e:
-         # Handle the error or log it
-        print(f"Error in getting user details: {e}")
-        return None
-
-
-def reset_password(username: str, password: str):
-    '''Given the username, update the password'''
-    user = get_user(username)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-        )
-    try:
-        with sqlconn.cursor(dictionary=True) as cur:
-            # Update the password
-            hashed_password = get_password_hash(password)
-            _ = cur.execute(
-                "UPDATE user SET hashed_password = %s WHERE username=%s",
-                (hashed_password, username)
-            )
-        # Commit the changes
-        sqlconn.commit()
-        return True
-    except Error as e:
-        # Handle the error or log it
-        print(f"Error in reset_password: {e}")
-        return False
-
-def authenticate_user(username: str, password: str):
-    '''Authenticate the user'''
-    user = get_user(username)
-    if not user:
-        return False
-    if not verify_password(password, user['hashed_password']):
-        return False
-    return user
-
-
-def create_access_token(data: dict, expires_delta: timedelta | None = None):
-    '''Get an access token once anuthenticated'''
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, JWT_SECRET, algorithm=JWT_ALGORITHM)
-    return encoded_jwt
-
-
-async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
-    '''Get the currently logged in user'''
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
-            raise credentials_exception
-        token_data = TokenData(username=username)
-    except JWTError as e:
-        raise credentials_exception from e
-    user = get_user(token_data.username)
-    if user is None:
-        raise credentials_exception
-    return user
-
-
-# @app.post("/register", response_model=TokenData)
-# async def register_in_app(
-#     form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
-# ):
-#     '''Register for the application'''
-#     uname = form_data.username
-#     pwd = form_data.password
-#     reset = reset_password(uname, pwd)
-#     if not reset:
-#         raise HTTPException(
-#             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-#             detail="Could not register the user"
-#         )
-#     return {"username": uname}
-
-
-@app.post("/validate")
+@app.post("/authorize")
 async def validate(
     req: Request
 ):
@@ -196,10 +42,8 @@ async def validate(
     encoded_jwt = encoded_jwt.split(" ")[1]
 
     try:
-        decoded = jwt.decode(
-            encoded_jwt, JWT_SECRET, algorithms=[JWT_ALGORITHM]
-        )
-        return decoded
+        decoded_jwt = authenticate.decode_jwt_token(encoded_jwt)
+        return decoded_jwt
     except JWTError as exc:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -207,12 +51,12 @@ async def validate(
         ) from exc
 
 
-@app.post("/login", response_model=Token)
-async def login_for_access_token(
+@app.post("/authenticate", response_model=Token)
+async def authenticate_user(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
 ):
     '''Access token api'''
-    user = authenticate_user(form_data.username, form_data.password)
+    user = authenticate.authenticate_user(form_data.username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -220,11 +64,7 @@ async def login_for_access_token(
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token_expires = timedelta(minutes=int(ACCESS_TOKEN_EXPIRE_MINUTES))
-    access_token = create_access_token(
+    access_token = authenticate.create_access_token(
         data={"sub": user['username']}, expires_delta=access_token_expires
     )
     return {"access_token": access_token, "token_type": "bearer"}
-
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
