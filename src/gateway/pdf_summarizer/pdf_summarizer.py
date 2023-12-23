@@ -1,3 +1,8 @@
+"""
+    PDF Summarizer
+
+"""
+
 # Python built-in module for handling temporary files.
 import tempfile
 
@@ -19,11 +24,11 @@ from langchain.text_splitter import CharacterTextSplitter
 # Langchain library that represents a document.
 from langchain.docstore.document import Document
 
-# Pydantic BaseModel
-from pydantic import BaseModel, Field
-
 # Output Parser
 from langchain.output_parsers import PydanticOutputParser, OutputFixingParser
+
+# Pydantic BaseModel
+from pydantic import BaseModel, Field
 
 # Read Env variables
 from dotenv import load_dotenv
@@ -32,10 +37,16 @@ load_dotenv()
 
 
 class Summary(BaseModel):
+    """ 
+    doc string
+    """
     summary: str = Field(description="Summary of the PDF")
 
 
-async def PDFReader(file):
+def pdf_reader(file):
+    """
+        doc string
+    """
     if file is not None:
         print(type(file))
         with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
@@ -44,7 +55,11 @@ async def PDFReader(file):
             return pdf_path
 
 
-def PDFSummarizer(doc: str):
+def pdf_summarizer(doc: str):
+    """
+    doc string
+
+    """
     llm = OpenAI(temperature=0.9)
     loader = PyPDFLoader(doc)
     pages = loader.load_and_split()
@@ -65,5 +80,5 @@ def PDFSummarizer(doc: str):
     return summary
 
 if __name__ == "__main__":
-    filename = askopenfilename()
-    print(PDFSummarizer(filename))
+    FILENAME = askopenfilename()
+    print(pdf_summarizer(FILENAME))

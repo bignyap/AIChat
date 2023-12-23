@@ -1,12 +1,10 @@
 ''' Gatway doc string'''
 
-import json
+from fastapi import FastAPI, Request, UploadFile
 
-from fastapi import FastAPI, Request
-
-from auth import validate
 from auth_svc import access
 from company_name import company_name
+from pdf_summarizer import pdf_summarizer
 
 app = FastAPI()
 
@@ -24,20 +22,34 @@ async def login(
     return err
 
 
-@app.post("/nameCompanies")
-async def name_companies(
-    request: Request
-):
-    ''' company name endpoint '''
+@app.get("/getCompanyName")
+def llm_name(product: str, howmany:int = 1) -> str:
+    """
+    This is a docstring for llm_name.
 
-    validation, err = validate.token(request)
+    Args:
+        product (str): string
 
-    if err:
-        return err
+    Returns:
+        str: Path to the audio file
+    """
+    return company_name.llm_company_name(product, howmany)
 
-    validation = json.loads(validation)
 
-    return validation
+@app.post("/summarize")
+async def llm_summarize(file: UploadFile) -> str:
+    """
+    This is a docstring for llm_summarize.
+
+    Args:
+        file (UploadFile): UplaodFile
+
+    Returns:
+        str: Path to the audio file
+    """
+    filepath = await pdf_summarizer.pdf_reader(file)
+    res =  pdf_summarizer.pdf_summarizer(filepath)
+    return res
 
 
 if __name__ == "__main__":
