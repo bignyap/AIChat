@@ -1,5 +1,7 @@
 ''' doc string for company name '''
 
+import os
+
 from typing import List
 
 from pydantic import BaseModel, Field
@@ -12,8 +14,8 @@ from langchain.output_parsers import PydanticOutputParser, OutputFixingParser
 
 from dotenv import load_dotenv
 
-load_dotenv()
-
+DOTEBV_PATH = "../.env"  # Path to the .env file in the parent directory
+load_dotenv(DOTEBV_PATH)
 
 class CompanyName(BaseModel):
     ''' company name model '''

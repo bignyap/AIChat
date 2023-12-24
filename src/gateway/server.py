@@ -3,7 +3,7 @@ Module doc string
 '''
 from fastapi import FastAPI, Request, UploadFile, HTTPException
 
-from authorize import authorize
+from i_authorize import authorize
 from company_name import company_name
 from pdf_summarizer import pdf_summarizer
 
@@ -17,7 +17,7 @@ async def llm_summarize(request: Request, file: UploadFile) -> str:
     """
 
     try:
-        _ = await authorize(request)
+        # _ = await authorize.authorize(request)
 
         filepath = await pdf_summarizer.pdf_reader(file)
         res = pdf_summarizer.pdf_summarizer(filepath)
@@ -37,7 +37,7 @@ async def llm_name(request: Request, product: str, howmany:int = 1) -> str:
     """
 
     try:
-        _ = await authorize(request)
+        _ = await authorize.authorize(request)
 
         res = company_name.llm_company_name(product, howmany)
         return res

@@ -3,6 +3,8 @@
 
 """
 
+import os
+
 # Python built-in module for handling temporary files.
 import tempfile
 
@@ -30,11 +32,10 @@ from langchain.output_parsers import PydanticOutputParser, OutputFixingParser
 # Pydantic BaseModel
 from pydantic import BaseModel, Field
 
-# Read Env variables
 from dotenv import load_dotenv
 
-load_dotenv()
-
+DOTEBV_PATH = "../.env"  # Path to the .env file in the parent directory
+load_dotenv(DOTEBV_PATH)
 
 class Summary(BaseModel):
     """ 
