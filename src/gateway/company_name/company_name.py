@@ -1,52 +1,47 @@
 ''' doc string for company name '''
 
-import os
-
-from typing import List
-
-from pydantic import BaseModel, Field
-
 from langchain.llms import OpenAI
-from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
-
-from langchain.output_parsers import PydanticOutputParser, OutputFixingParser
 
 from dotenv import load_dotenv
 
 DOTEBV_PATH = "../.env"  # Path to the .env file in the parent directory
 load_dotenv(DOTEBV_PATH)
 
-class CompanyName(BaseModel):
-    ''' company name model '''
-    company_names: List[str] = Field(description="list of names of companies")
 
+def llm_company_name(topic: str = "icecream", howmany: int = 1):
 
-def llm_company_name(product: str, howmany: int = 1):
-
-    ''' Company Name from LLM '''
+    ''' JOkes '''
 
     llm = OpenAI(temperature=0.9)
+
     prompt = PromptTemplate(
-        input_variables=["product", "howmany"],
-        template="Give me {howmany} cool company names that makes {product}?",
+        input_variables = ["howmany", "topic"],
+        template = "Give me {howmany} cool and innovative name for a/an {topic} company",
     )
 
-    chain = LLMChain(llm=llm, prompt=prompt, output_key="company_names")
+    # prompt = prompt.format(topic = topic, howmany = howmany)
 
-    output =  chain.run({
-        'product': product,
-        'howmany': howmany
-    })
+    chain = (
+        prompt | llm
+    )
 
-    parser = PydanticOutputParser(pydantic_object=CompanyName)
+    # output = chain.invoke({"topic": topic, "howmany": howmany})
 
-    fix_parser = OutputFixingParser.from_llm(parser=parser, llm=llm)
+    # return output
 
-    return fix_parser.parse(output)
+    for chunk in chain.stream({"topic": topic, "howmany": howmany}):
+        yield chunk
+        # print(chunk, end="", flush=True)
 
 
 if __name__ == "__main__":
-    PRODUCT_NAME = str(input("What is the product name: "))
-    HOW_MANY = int(input("How many name you want: "))
-    print(llm_company_name(PRODUCT_NAME, HOW_MANY))
+    TOPIC = str(input("What kind of company: "))
+    HOW_MANY = int(input("How many names: "))
+    
+    # Generating company names
+    generated_names = llm_company_name(TOPIC, HOW_MANY)
+    
+    # Printing the generated names
+    for name in generated_names:
+        print(name, end="", flush=True)

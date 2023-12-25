@@ -27,21 +27,18 @@ from langchain.text_splitter import CharacterTextSplitter
 from langchain.docstore.document import Document
 
 # Output Parser
-from langchain.output_parsers import PydanticOutputParser, OutputFixingParser
-
-# Pydantic BaseModel
-from pydantic import BaseModel, Field
+# from langchain.output_parsers import PydanticOutputParser, OutputFixingParser
 
 from dotenv import load_dotenv
 
 DOTEBV_PATH = "../.env"  # Path to the .env file in the parent directory
 load_dotenv(DOTEBV_PATH)
 
-class Summary(BaseModel):
-    """ 
-    doc string
-    """
-    summary: str = Field(description="Summary of the PDF")
+# class Summary(BaseModel):
+#     """ 
+#     doc string
+#     """
+#     summary: str = Field(description="Summary of the PDF")
 
 
 def pdf_reader(file):
@@ -75,9 +72,6 @@ def pdf_summarizer(doc: str):
     docs = [Document(page_content=t) for t in texts]
     chain = load_summarize_chain(llm, chain_type="map_reduce")
     summary = chain.run(docs)
-    parser = PydanticOutputParser(pydantic_object=Summary)
-    fix_parser = OutputFixingParser.from_llm(parser=parser, llm=llm)
-    summary = fix_parser.parse(summary)
     return summary
 
 if __name__ == "__main__":
