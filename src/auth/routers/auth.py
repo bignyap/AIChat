@@ -5,14 +5,16 @@ from datetime import timedelta
 from typing import Annotated
 
 # fastapi lib
-from fastapi import Depends, HTTPException, status, Request, APIRouter
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi import Depends, HTTPException, status, Request, APIRouter, Header
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm, HTTPBearer
 
 from jose import JWTError
 
 from authenticate import authenticate
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+security = HTTPBearer()
 
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
 
@@ -43,10 +45,10 @@ async def authenticate_user(
 
 @router.post("/validate")
 async def validate(
-    req: Request
+    authorization: str = Depends(security)
 ):
     '''Validate access token'''
-    encoded_jwt = req.headers["Authorization"]
+    encoded_jwt = authorization.credentials
 
     if not encoded_jwt:
         raise HTTPException(
@@ -54,7 +56,7 @@ async def validate(
             detail="Missing credentials"
         )
 
-    encoded_jwt = encoded_jwt.split(" ")[1]
+    encoded_jwt = encoded_jwt.split(" ")[0]
 
     try:
         decoded_jwt = authenticate.decode_jwt_token(encoded_jwt)
