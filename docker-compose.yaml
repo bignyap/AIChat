@@ -1,0 +1,18 @@
+version: "3.9"
+services:
+  wwe:
+    # image: bignya/auth
+    build:
+      context: ./src/auth
+      dockerfile: ./Dockerfile
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ALGORITHM: ${JWT_ALGORITHM}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES}
+      MySQL_HOST: ${MySQL_HOST}
+      MySQL_Username: ${MySQL_Username}
+      MySQL_Password: ${MySQL_Password}
+      MySQL_DB: ${MySQL_DB}
+
+    ports:
+      - 8081:8081
