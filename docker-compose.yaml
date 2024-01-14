@@ -1,6 +1,6 @@
 version: "3.9"
 services:
-  wwe:
+  auth:
     # image: bignya/auth
     build:
       context: ./src/auth
@@ -13,6 +13,61 @@ services:
       MySQL_Username: ${MySQL_Username}
       MySQL_Password: ${MySQL_Password}
       MySQL_DB: ${MySQL_DB}
-
     ports:
-      - 8081:8081
+      - 8001:8001
+    expose:
+     - '8001'
+    depends_on:
+      - mysql
+
+  llm_service:
+    # image: bignya/llm_service
+    build:
+      context: ./src/llm_service
+      dockerfile: ./Dockerfile
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      AUTH_SVC_ADDRESS: ${AUTH_SVC_ADDRESS}
+    ports:
+      - 8002:8002
+    expose:
+     - '8002'
+    depends_on:
+      - mysql
+      - auth
+
+  chat_service:
+    # image: bignya/llm_service
+    build:
+      context: ./src/chat_service
+      dockerfile: ./Dockerfile
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      AUTH_SVC_ADDRESS: ${AUTH_SVC_ADDRESS}
+    ports:
+      - 8003:8003
+    expose:
+     - '8003'
+    depends_on:
+      - mysql
+      - auth
+
+  mysql:
+   image: mysql:8.0.32
+   command: --default-authentication-plugin=mysql_native_password
+   restart: always
+   environment:
+     MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+     MYSQL_DATABASE: ${MySQL_DB}
+     MYSQL_USER: ${MySQL_Username}
+     MYSQL_PASSWORD: ${MySQL_Password}
+   ports:
+     - '3306:3306'
+   expose:
+     - '3306'
+   volumes:
+     - 'mysql_data:/var/lib/mysql'
+
+volumes:
+  mysql_data:
+    driver: local

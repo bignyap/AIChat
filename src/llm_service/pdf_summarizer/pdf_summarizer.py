@@ -8,9 +8,6 @@ import os
 # Python built-in module for handling temporary files.
 import tempfile
 
-# File Selector
-from tkinter.filedialog import askopenfilename
-
 # Core Langchain library
 from langchain.llms import OpenAI
 
@@ -75,5 +72,7 @@ def pdf_summarizer(doc: str):
     return summary
 
 if __name__ == "__main__":
+    # File Selector
+    from tkinter.filedialog import askopenfilename
     FILENAME = askopenfilename()
     print(pdf_summarizer(FILENAME))
