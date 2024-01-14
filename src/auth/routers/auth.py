@@ -1,15 +1,12 @@
-''' Authentication Module '''
+''' authentication endpoints '''
 
 import os
 from datetime import timedelta
 from typing import Annotated
 
 # fastapi lib
-from fastapi import Depends, FastAPI, HTTPException, status, Request
+from fastapi import Depends, HTTPException, status, Request, APIRouter
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-
-# pydantic base model
-from pydantic import BaseModel
 
 from jose import JWTError
 
@@ -19,14 +16,13 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
 
-class Token(BaseModel):
-    '''Represents class with access_token and token_type'''
-    access_token: str
-    token_type: str
 
-app = FastAPI()
+router = APIRouter(
+    prefix="/auth",
+)
 
-@app.post("/authorize")
+
+@router.post("/validate")
 async def validate(
     req: Request
 ):
@@ -51,7 +47,7 @@ async def validate(
         ) from exc
 
 
-@app.post("/authenticate", response_model=Token)
+@router.post("/login", response_model=authenticate.Token)
 async def authenticate_user(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
 ):

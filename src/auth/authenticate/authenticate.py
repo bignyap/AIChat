@@ -41,6 +41,11 @@ sqlconn = mysql.connector.connect(
   database = MySQL_DB
 )
 
+class Token(BaseModel):
+    '''Represents class with access_token and token_type'''
+    access_token: str
+    token_type: str
+
 class TokenData(BaseModel):
     '''Represents TokenData class'''
     username: str | None = None
