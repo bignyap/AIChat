@@ -22,6 +22,25 @@ router = APIRouter(
 )
 
 
+@router.post("/login", response_model=authenticate.Token)
+async def authenticate_user(
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
+):
+    '''Access token api'''
+    user = authenticate.authenticate_user(form_data.username, form_data.password)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token_expires = timedelta(minutes=int(ACCESS_TOKEN_EXPIRE_MINUTES))
+    access_token = authenticate.create_access_token(
+        data={"sub": user['username']}, expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
+
+
 @router.post("/validate")
 async def validate(
     req: Request
@@ -45,22 +64,3 @@ async def validate(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not authorized"
         ) from exc
-
-
-@router.post("/login", response_model=authenticate.Token)
-async def authenticate_user(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
-):
-    '''Access token api'''
-    user = authenticate.authenticate_user(form_data.username, form_data.password)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    access_token_expires = timedelta(minutes=int(ACCESS_TOKEN_EXPIRE_MINUTES))
-    access_token = authenticate.create_access_token(
-        data={"sub": user['username']}, expires_delta=access_token_expires
-    )
-    return {"access_token": access_token, "token_type": "bearer"}
