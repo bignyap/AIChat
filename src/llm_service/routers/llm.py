@@ -1,6 +1,6 @@
 ''' llm endpoints '''
 
-from fastapi import APIRouter, UploadFile, Request
+from fastapi import APIRouter, UploadFile, Request, Depends
 from fastapi.responses import StreamingResponse
 
 # from i_authorize import authorize
@@ -10,9 +10,13 @@ from audio_to_text.audio_to_text import audio_to_text
 
 from .limiter import limiter
 
+from dependencies.dependencies import validate_token_header
 
 router = APIRouter(
     prefix="/llm",
+    tags=["llm"],
+    dependencies=[Depends(validate_token_header)],
+    responses={404: {"description": "Not found"}},
 )
 
 

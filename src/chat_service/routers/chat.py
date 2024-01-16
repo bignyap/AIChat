@@ -2,19 +2,24 @@
 
 from pydub import AudioSegment
 
-from fastapi import APIRouter, File, UploadFile, HTTPException
+from fastapi import APIRouter, File, UploadFile, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 
 from functions.openai_request import convert_audio_text, get_chat_reponse, text_to_speech
 from functions.database import store_messages, reset_messages
 
+from dependencies.dependencies import validate_token_header
+
 router = APIRouter(
     prefix="/chat",
+    tags=["chat"],
+    dependencies=[Depends(validate_token_header)],
+    responses={404: {"description": "Not found"}},
 )
 
 
 @router.post("/post_audio_get")
-def get_audio(file: UploadFile = File(...)):
+async def get_audio(file: UploadFile = File(...)):
     """
     Endpoint to summarize a PDF file.
     
@@ -50,7 +55,7 @@ def get_audio(file: UploadFile = File(...)):
 
 
 @router.post("/reset_messages")
-def reset_conversation():
+async def reset_conversation():
     """
     Delete chat history
     """

@@ -5,7 +5,7 @@ from datetime import timedelta
 from typing import Annotated
 
 # fastapi lib
-from fastapi import Depends, HTTPException, status, Request, APIRouter, Header
+from fastapi import Depends, HTTPException, status, APIRouter
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm, HTTPBearer
 
 from jose import JWTError
