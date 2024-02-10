@@ -22,3 +22,11 @@ class Message(BaseModel):
     '''Represents Message class'''
     message: str
     date_created: datetime.time
+    role: str
+
+
+class UserThreadMessage(BaseModel):
+    '''Represents Thread Message Link'''
+    user_id: int
+    message_id: int
+    thrad_id: int
