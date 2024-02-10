@@ -8,7 +8,7 @@ import random
 from typing import List
 from fastapi import HTTPException, Depends
 
-from database import get_db_cursor, execute_insertion_stmt, execute_select_stmt, select_data
+from database import get_db_cursor, execute_insertion_stmt, execute_select_stmt, select_data, insert_data
 import model
 
 def is_accessible_thread(user_id: int, thread_id: int, cursor=Depends(get_db_cursor)):
@@ -195,5 +195,24 @@ def delete_thread(thread_id: int, user_id: int):
     # Delete the thread
     delete_thread_stmt = "DELETE FROM threads WHERE id = %s"
     execute_select_stmt(delete_thread_stmt, values = (thread_id, ))
+
+
+def create_thread(thread_name: str, user_id: int):
+    """
+    Create a new thread
+    """
+
+    # Insert the new thread into the database
+    insert_thread_stmt = "INSERT INTO threads (name, date_created) VALUES (%s, %s)"
+    current_datetime = datetime.datetime.now()
+    thread_ids = insert_data(insert_thread_stmt, [(thread_name, current_datetime)])
+    thread_id = thread_ids[1]
+
+    # Link the thread to the user
+    link_thread_user_stmt = "INSERT INTO users_thrads_messages (user_id, thread_id) VALUES (%s, %s)"
+    insert_data(link_thread_user_stmt, [(user_id, thread_id)])
+
+    return thread_id
+
 
 

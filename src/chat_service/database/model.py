@@ -16,12 +16,12 @@ class User(BaseModel):
 class Thread(BaseModel):
     '''Represents Thread class'''
     name: str
-    date_created: datetime.time
+    date_created: datetime.time = datetime.datetime.now()
 
 class Message(BaseModel):
     '''Represents Message class'''
     message: str
-    date_created: datetime.time
+    date_created: datetime.time = datetime.datetime.now()
     role: str
 
 

@@ -94,4 +94,4 @@ def insert_data(query: str, values: Optional[list] = None, cursor=Depends(get_db
     if values is None:
         values = []
 
-    execute_insertion_stmt(query=query, values=values, cursor=cursor)
+    return execute_insertion_stmt(query=query, values=values, cursor=cursor)

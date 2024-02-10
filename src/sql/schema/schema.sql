@@ -19,7 +19,8 @@ CREATE TABLE `threads` (
 CREATE TABLE `messages` (
   `id` int PRIMARY KEY NOT NULL AUTO_INCREMENT,
   `date_created` datetime NOT NULL,
-  `message` text NOT NULL
+  `message` text NOT NULL,
+  `role` varchar(100) NOT NULL
 );
 
 CREATE TABLE `users_thrads_messages` (
