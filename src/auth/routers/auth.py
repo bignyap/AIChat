@@ -24,6 +24,14 @@ router = APIRouter(
 )
 
 
+@router.post("/hash")
+def generate_hash(
+    password: str
+):
+    '''Validate access token'''
+    return authenticate.get_password_hash(password)
+
+
 @router.post("/login", response_model=authenticate.Token)
 async def authenticate_user(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
@@ -37,9 +45,16 @@ async def authenticate_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     access_token_expires = timedelta(minutes=int(ACCESS_TOKEN_EXPIRE_MINUTES))
-    access_token = authenticate.create_access_token(
-        data={"sub": user['username']}, expires_delta=access_token_expires
-    )
+    data = {
+        "typ": "Bearer",
+        "azp": user["id"], 
+        "sub": user['username'],
+        "given_name": user["first_name"],
+        "family_name": user["last_name"],
+        "is_active": user["is_active"],
+        "iss": "auth"
+    }
+    access_token = authenticate.create_access_token(data=data, expires_delta=access_token_expires)
     return {"access_token": access_token, "token_type": "bearer"}
 
 
@@ -58,8 +73,11 @@ async def validate(
 
     encoded_jwt = encoded_jwt.split(" ")[0]
 
+    print(encoded_jwt)
+
     try:
         decoded_jwt = authenticate.decode_jwt_token(encoded_jwt)
+        print(decoded_jwt)
         return decoded_jwt
     except JWTError as exc:
         raise HTTPException(

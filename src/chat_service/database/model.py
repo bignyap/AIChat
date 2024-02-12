@@ -25,8 +25,7 @@ class Message(BaseModel):
     role: str
 
 
-class UserThreadMessage(BaseModel):
+class ThreadMessage(BaseModel):
     '''Represents Thread Message Link'''
-    user_id: int
     message_id: int
     thrad_id: int

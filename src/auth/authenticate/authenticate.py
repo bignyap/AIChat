@@ -61,15 +61,15 @@ class User(BaseModel):
 
 class UserInDB(User):
     '''Represents UserInDB class'''
-    hashed_password: str
+    hashed_key: str
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-def verify_password(plain_password, hashed_password):
+def verify_password(plain_password, hashed_key):
     '''Verify plain password with hashed password'''
-    return pwd_context.verify(plain_password, hashed_password)
+    return pwd_context.verify(plain_password, hashed_key)
 
 
 def get_password_hash(password):
@@ -81,7 +81,7 @@ def get_user(username: str):
     '''Given the username, get the details from database'''
     try:
         with sqlconn.cursor(dictionary=True) as cur:
-            cur.execute("SELECT * FROM user WHERE username=%s", (username,))
+            cur.execute("SELECT * FROM users WHERE username=%s", (username,))
             user_row = cur.fetchone()
             return user_row
     except Error as e:
@@ -94,7 +94,7 @@ def authenticate_user(username: str, password: str):
     user = get_user(username)
     if not user:
         return False
-    if not verify_password(password, user['hashed_password']):
+    if not verify_password(password, user['hashed_key']):
         return False
     return user
 

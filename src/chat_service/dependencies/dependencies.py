@@ -2,8 +2,9 @@
 Access token verifier dependencies
 """
 import os
+import json
 from fastapi import HTTPException, Depends, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm, HTTPBearer
+from fastapi.security import HTTPBearer
 import httpx
 
 security = HTTPBearer()
@@ -17,10 +18,11 @@ async def validate_token(token: str) -> bool:
 
     async with httpx.AsyncClient() as client:
         response = await client.post(validate_url, headers=headers)
+    
+    if response.status_code != 200:
+        raise HTTPException(status_code=response.status_code, detail=response.content)
 
-    if response.status_code == 200:
-        return response.content
-    return False
+    return json.loads(response.content)
 
 
 # x_token: Annotated[str, Header()]
@@ -38,5 +40,8 @@ async def validate_token_header(
             detail="Missing credentials"
         )
 
-    if not await validate_token(x_token):
-        raise HTTPException(status_code=401, detail="Token validation failed")
+    try:
+        user_detail = await validate_token(x_token)
+        return user_detail
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Token validation failed") from e

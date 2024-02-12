@@ -5,18 +5,18 @@ Database related operations
 import datetime
 import random
 
-from typing import List
+from typing import List, Any, Annotated
 from fastapi import HTTPException, Depends
 
-from database import get_db_cursor, execute_insertion_stmt, execute_select_stmt, select_data, insert_data
-import model
+from . import database as db
+from . import model
 
-def is_accessible_thread(user_id: int, thread_id: int, cursor=Depends(get_db_cursor)):
+def is_accessible_thread(user_id: int, thread_id: int, cursor=Depends(db.get_db_cursor)):
     '''
     Check if the user has access to this particular thread
     '''
     try:
-        cursor.execute("SELECT COUNT(*) FROM users_thrads_messages WHERE user_id=%s AND thread_id=%s", (user_id, thread_id))
+        cursor.execute("SELECT COUNT(*) FROM thrads WHERE creator_id=%s AND thread_id=%s", (user_id, thread_id))
         count = cursor.fetchone()[0]
     except Exception as e:
         raise HTTPException(status_code=500, detail="Database error") from e
@@ -73,7 +73,7 @@ def get_thread_messages(thread_id: int):
         "LEFT JOIN messages ON messages.id = users_thrads_messages.message_id " \
         "WHERE users_thrads_messages.thread_id = %s"
     
-    messages_data = select_data(sql_stmt, (thread_id,))
+    messages_data = db.select_data(sql_stmt, (thread_id,))
     messages = []
     for msg in messages_data:
         message = {
@@ -87,7 +87,11 @@ def get_thread_messages(thread_id: int):
     return messages
 
 
-def store_messages(user_id: int, thread_id: int, request_message: str, response_message: str):
+def store_messages(
+    cursor: Annotated[Any, Depends(db.get_db_cursor)],
+    thread_id: int, 
+    request_message: str, response_message: str
+):
     """
     Store the messages
     """
@@ -97,7 +101,7 @@ def store_messages(user_id: int, thread_id: int, request_message: str, response_
     assistant_message = {"role":"system", "content":response_message}
     messages = [user_message, assistant_message]
     try:
-        message_ids = insert_messages(messages)
+        message_ids = insert_messages(cursor, messages)
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to store messages") from e
 
@@ -105,16 +109,19 @@ def store_messages(user_id: int, thread_id: int, request_message: str, response_
     thread_messages = []
     for message_id in message_ids:
         thread_messages.append(
-            model.UserThreadMessage(user_id=user_id, thread_id=thread_id, message_id=message_id)
+            model.ThreadMessage(thread_id=thread_id, message_id=message_id)
         )
 
     try:
-        insert_user_thread_messages(thread_messages)
+        insert_thread_messages(cursor, thread_messages)
     except Exception as e:
         raise HTTPException(status_code=500, detail="Failed to link messages to thread") from e
 
 
-def insert_messages(messages: List[dict]):
+def insert_messages(
+    cursor: Annotated[Any, Depends(db.get_db_cursor)],
+    messages: List[dict]
+):
     """
     Insert message to database
     """
@@ -124,95 +131,117 @@ def insert_messages(messages: List[dict]):
         "VALUES (%s, %s, %s)"
     ) 
     data = [(message['content'], datetime.datetime.now(), message['role']) for message in messages]
-    try:
-        message_ids = execute_insertion_stmt(query=insert_stmt, values=data)
-    except Exception as e:
-        raise e
-    
+
+    message_ids = db.execute_insertion_stmt(cursor, query=insert_stmt, values=data)
     return message_ids
 
 
-def insert_user_thread_messages(thread_messages: List[model.UserThreadMessage]):
+def insert_thread_messages(
+    cursor: Annotated[Any, Depends(db.get_db_cursor)],
+    thread_messages: List[model.ThreadMessage]
+):
     """
     Insert message to database
     """
 
     insert_stmt = (
-        "INSERT INTO users_thrads_messages(user_id, thread_id, message_id)"
+        "INSERT INTO thrads_messages(user_id, thread_id, message_id)"
         "VALUES (%s, %s, %s)"
     ) 
-    data = [(msg.user_id, msg.thread_id, msg.message_id) for msg in thread_messages]
+    data = [(msg.thread_id, msg.message_id) for msg in thread_messages]
 
     try:
-        execute_insertion_stmt(query=insert_stmt, values=data)
+        db.execute_insertion_stmt(cursor, query=insert_stmt, values=data)
     except Exception as e:
         raise e
     
 
-def delete_thread_message(message_id: int, user_id: int, thread_id: int):
+def delete_thread_message(
+    cursor: Annotated[Any, Depends(db.get_db_cursor)],
+    message_id: int, user_id: int, thread_id: int
+):
     """
     Delete a message from a thread if the user has access
     """
 
     # Check if the user has access to the message thread
-    is_thread_accessible = is_accessible_thread(user_id, thread_id)
+    is_thread_accessible = is_accessible_thread(user_id, thread_id, cursor=cursor)
     if not is_thread_accessible:
         raise HTTPException(status_code=400, detail="Not able to delete message from the thread")
 
     # Delete the message
     delete_stmt = "DELETE FROM users_thrads_messages WHERE message_id = %s AND user_id = %s AND thread_id = %s"
-    execute_select_stmt(delete_stmt, values = (message_id, user_id, thread_id))
+    db.execute_select_stmt(cursor, query = delete_stmt, values = (message_id, user_id, thread_id))
 
 
-def delete_all_thread_message(user_id: int, thread_id: int):
+def delete_all_thread_message(
+    cursor: Annotated[Any, Depends(db.get_db_cursor)], 
+    user_id: int, thread_id: int
+):
     """
     Delete a message from a thread if the user has access
     """
 
     # Check if the user has access to the message thread
-    is_thread_accessible = is_accessible_thread(user_id, thread_id)
+    is_thread_accessible = is_accessible_thread(user_id, thread_id, cursor=cursor)
     if not is_thread_accessible:
         raise HTTPException(status_code=400, detail="Not able to delete message from the thread")
 
     # Delete the message
     delete_stmt = "DELETE FROM users_thrads_messages WHERE thread_id = %s"
-    execute_select_stmt(delete_stmt, values = (thread_id, ))
+    db.execute_select_stmt(cursor, delete_stmt, values = (thread_id, ))
 
 
-def delete_thread(thread_id: int, user_id: int):
+def delete_thread(
+    cursor: Annotated[Any, Depends(db.get_db_cursor(dictionary=False))], 
+    thread_id: int, 
+    user_id: int
+):
     """
     Delete an entire thread if the user has access
     """
 
     # Check if the user has access to the thread
-    is_thread_accessible = is_accessible_thread(user_id, thread_id)
+    is_thread_accessible = is_accessible_thread(user_id, thread_id, cursor=cursor)
     if not is_thread_accessible:
         raise HTTPException(status_code=400, detail="Not able to delete the thread")
 
     # Delete all messages associated with the thread
-    delete_all_thread_message(user_id, thread_id)
+    delete_all_thread_message(cursor, user_id, thread_id)
 
     # Delete the thread
     delete_thread_stmt = "DELETE FROM threads WHERE id = %s"
-    execute_select_stmt(delete_thread_stmt, values = (thread_id, ))
+    db.execute_select_stmt(cursor, delete_thread_stmt, values = (thread_id, ))
 
 
-def create_thread(thread_name: str, user_id: int):
+def create_thread(
+    cursor: Annotated[Any, Depends(db.get_db_cursor)], 
+    thread_name: str, 
+    user_id: int
+):
     """
     Create a new thread
     """
 
     # Insert the new thread into the database
-    insert_thread_stmt = "INSERT INTO threads (name, date_created) VALUES (%s, %s)"
+    insert_thread_stmt = "INSERT INTO threads (name, creator_id, date_created) VALUES (%s, %s, %s)"
     current_datetime = datetime.datetime.now()
-    thread_ids = insert_data(insert_thread_stmt, [(thread_name, current_datetime)])
-    thread_id = thread_ids[1]
+    thread_ids = db.insert_data(cursor=cursor, query=insert_thread_stmt, values=[(thread_name, user_id, current_datetime)])
 
-    # Link the thread to the user
-    link_thread_user_stmt = "INSERT INTO users_thrads_messages (user_id, thread_id) VALUES (%s, %s)"
-    insert_data(link_thread_user_stmt, [(user_id, thread_id)])
+    return thread_ids[0][0]
 
-    return thread_id
+
+def list_thread(
+    cursor: Annotated[Any, Depends(db.get_db_cursor(dictionary=True))],  
+    user_id: int
+):
+    """
+    List all thread for the user
+    """
+    select_stmt = "SELECT * FROM threads WHERE creator_id=%s"
+    threads = db.select_data(cursor=cursor, query=select_stmt, values=(user_id,))
+    
+    return threads
 
 
 
