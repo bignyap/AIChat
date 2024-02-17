@@ -3,9 +3,9 @@ OpenAI Services
 
 """
 
-import openai
+from typing import List
 
-from .database import get_recent_messages
+import openai
 
 # OpenAI - Whisper
 # Convert Audio to text
@@ -21,29 +21,22 @@ def convert_audio_text(audio_file):
         message_text = transcript.text
         return message_text
     except Exception as e:
-        print(e)
         return e
 
 # OpenAI - ChatGPT
 # Get Response to our Message
-def get_chat_reponse(message_input):
+def get_chat_reponse(message_input:List[dict]):
     """
     Chat reponse
     """
-
-    messages = get_recent_messages()
-    user_message = {"role":"user", "content":message_input}
-    messages.append(user_message)
-
     try:
         response = openai.chat.completions.create(
             model="gpt-3.5-turbo",
-            messages=messages
+            messages=message_input
         )
         message_text = response.choices[0].message.content
         return message_text
     except Exception as e:
-        print(e)
         return e
 
 
@@ -63,6 +56,5 @@ def text_to_speech(input_text):
         return response
         # .stream_to_file(speech_file_path)
     except Exception as e:
-        print(e)
         return e
 

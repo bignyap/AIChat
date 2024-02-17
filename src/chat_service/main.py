@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from routers.thread import router as thread_router
 from routers.chat import router as chat_router
+from routers.speech import router as speech_router
 
 from dotenv import load_dotenv
 
@@ -32,6 +33,7 @@ app.add_middleware(
 # Add the routers
 app.include_router(thread_router)
 app.include_router(chat_router)
+app.include_router(speech_router)
 
 # Check Health
 @app.get("/")

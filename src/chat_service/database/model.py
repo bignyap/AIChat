@@ -28,4 +28,4 @@ class Message(BaseModel):
 class ThreadMessage(BaseModel):
     '''Represents Thread Message Link'''
     message_id: int
-    thrad_id: int
+    thread_id: int
