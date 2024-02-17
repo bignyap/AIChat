@@ -4,9 +4,10 @@ Module doc string
 
 # Main Imports
 import uvicorn
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from routers.thread import router as thread_router
 from routers.chat import router as chat_router
 
 from dotenv import load_dotenv
@@ -14,7 +15,10 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Initialize App
-app = FastAPI()
+app = FastAPI(
+    description="Chat service using OpenAI and FastAPI",
+    title="OpenAPI Chat Application"
+)
 
 # CORS - Middleware
 app.add_middleware(
@@ -26,6 +30,7 @@ app.add_middleware(
 )
 
 # Add the routers
+app.include_router(thread_router)
 app.include_router(chat_router)
 
 # Check Health
