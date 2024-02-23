@@ -79,16 +79,20 @@ def execute_insertion_stmt(
         cursor.executemany(query, values)
 
         # Retrieve the last inserted IDs
-        cursor.execute("SELECT LAST_INSERT_ID()")
         last_inserted_ids = cursor.fetchall()
+        print("Auto-generated IDs:", [id[0] for id in last_inserted_ids])
+        # cursor.execute("SELECT id FROM your_table WHERE id >= LAST_INSERT_ID() - ROW_COUNT() + 1")
+        # last_inserted_ids = [row[0] for row in cursor.fetchall()]
+        # cursor.execute("SELECT LAST_INSERT_ID()")
+        # last_inserted_ids = cursor.fetchall()
         return last_inserted_ids
     except Error as e:
         raise e
 
 
 def insert_data(
-    cursor: Annotated[Any, Depends(get_db_cursor)], 
-    query: str, 
+    cursor: Annotated[Any, Depends(get_db_cursor)],
+    query: str,
     values: Optional[List[tuple]] = None
 ):
     """

@@ -72,4 +72,4 @@ async def get_chat_messages(
     """
     # Save file from frontend
     response = dbm.get_recent_messages(user_details["azp"], thread_id, cursor=cursor)
-    return response
+    return response[1::]

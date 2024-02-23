@@ -88,7 +88,7 @@ def delete_all_thread_message(
         raise HTTPException(status_code=400, detail="Not able to delete message from the thread")
 
     # Delete the message
-    delete_stmt = "DELETE FROM users_thrads_messages WHERE thread_id = %s"
+    delete_stmt = "DELETE FROM messages WHERE thread_id = %s"
     db.execute_select_stmt(cursor, delete_stmt, values = (thread_id, ))
 
 

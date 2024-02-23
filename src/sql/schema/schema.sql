@@ -19,18 +19,12 @@ CREATE TABLE `threads` (
 
 CREATE TABLE `messages` (
   `id` int PRIMARY KEY NOT NULL AUTO_INCREMENT,
+  `thread_id` int NOT NULL,
   `date_created` datetime NOT NULL,
   `message` text NOT NULL,
   `role` varchar(100) NOT NULL
 );
 
-CREATE TABLE `thrads_messages` (
-  `thread_id` int NOT NULL,
-  `message_id` int NOT NULL
-);
-
 ALTER TABLE `threads` ADD FOREIGN KEY (`creator_id`) REFERENCES `users` (`id`);
 
-ALTER TABLE `thrads_messages` ADD FOREIGN KEY (`thread_id`) REFERENCES `threads` (`id`);
-
-ALTER TABLE `thrads_messages` ADD FOREIGN KEY (`message_id`) REFERENCES `messages` (`id`);
+ALTER TABLE `messages` ADD FOREIGN KEY (`thread_id`) REFERENCES `threads` (`id`);
