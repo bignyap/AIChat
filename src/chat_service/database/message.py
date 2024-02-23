@@ -93,7 +93,7 @@ def insert_messages(
 
     insert_stmt = (
         "INSERT INTO messages(thread_id, message, date_created, role)"
-        "VALUES (%s, %s, %s)"
+        "VALUES (%s, %s, %s, %s)"
     ) 
     data = [(thread_id, message['content'], datetime.datetime.now(), message['role']) for message in messages]
     message_ids = db.execute_insertion_stmt(cursor, query=insert_stmt, values=data)
