@@ -20,16 +20,30 @@ DATABASE_CONFIG = {
     'raise_on_warnings': True
 }
 
+
+# I created this class so that it helps me to create connection outside of FastAPI context manager
+class MyDBContextManager:
+    """
+    DB Context Manager
+    """
+    def __init__(self):
+        self.connection = mysql.connector.connect(**DATABASE_CONFIG)
+
+    def __enter__(self):
+        print("Connection returning: ")
+        return self.connection
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.connection.close()
+
+
 # Dependency to get a database connection
 def get_db_connection():
     '''
     Establishes a connection to the database.
     '''
-    try:
-        connection = mysql.connector.connect(**DATABASE_CONFIG)
+    with MyDBContextManager() as connection:
         yield connection
-    finally:
-        connection.close()
 
 
 # Dependency to get a database cursor
@@ -48,14 +62,17 @@ def get_db_cursor(connection=Depends(get_db_connection), dictionary=False):
         cursor.close()
 
 
-def execute_select_stmt(cursor: Annotated[Any, Depends(get_db_cursor)], query: str, values: tuple = ()):
+def execute_select_stmt(
+    cursor: Annotated[Any, Depends(get_db_cursor)],
+    query: str, values: tuple = ()
+):
     """
     Execute SQL query with values and handle transaction rollback and commit
     """
     try:
         cursor.execute(query, values)
     except Error as e:
-        raise e
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}") from e
     
     
 def select_data(cursor: Annotated[Any, Depends(get_db_cursor)], query: str, values: tuple = ()):
@@ -68,9 +85,8 @@ def select_data(cursor: Annotated[Any, Depends(get_db_cursor)], query: str, valu
 
 
 def execute_insertion_stmt(
-    cursor: Annotated[Any, Depends(get_db_cursor)], 
-    query: str, 
-    values: List[tuple]
+    cursor: Annotated[Any, Depends(get_db_cursor)],
+    query: str, values: List[tuple]
 ):
     """
     Execute SQL query with values and handle transaction rollback and commit
@@ -81,7 +97,7 @@ def execute_insertion_stmt(
         last_inserted_ids = cursor.fetchall()
         return last_inserted_ids
     except Error as e:
-        raise e
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}") from e
 
 
 def insert_data(

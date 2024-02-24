@@ -59,25 +59,31 @@ def get_thread_messages(thread_id: int, cursor = Depends(db.get_db_cursor)):
     return messages
 
 
-def store_messages(
-    cursor: Annotated[Any, Depends(db.get_db_cursor)],
-    thread_id: int, request_message: str, response_message: str
-):
+
+def store_messages(thread_id, request_message, response_message):
     """
     Store the messages
     """
+    with db.MyDBContextManager() as connection:
+        
+        cursor = connection.cursor()
 
-    # Store the message
-    user_message = {"role":"user", "content":request_message}
-    assistant_message = {"role":"assistant", "content":response_message}
-    messages = [user_message, assistant_message]
-    
-    try:
-        message_ids = insert_messages(cursor, thread_id, messages)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="Failed to store messages") from e
-    
-    message_ids = [item for sublist in message_ids for item in sublist]
+        # Store the message
+        user_message = {"role": "user", "content": request_message}
+        assistant_message = {"role": "assistant", "content": response_message}
+        messages = [user_message, assistant_message]
+
+        try:
+            message_ids = insert_messages(cursor, thread_id, messages)
+        except Exception as e:
+            connection.rollback()
+            raise HTTPException(status_code=500, detail="Failed to store messages") from e
+        finally:
+            cursor.close()
+        
+        connection.commit()
+        
+        message_ids = [item for sublist in message_ids for item in sublist]
 
     return message_ids
 
@@ -99,5 +105,4 @@ def insert_messages(
     message_ids = db.execute_insertion_stmt(cursor, query=insert_stmt, values=data)
     
     return message_ids
-
 

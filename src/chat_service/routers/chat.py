@@ -1,6 +1,7 @@
 ''' chat message endpoints '''
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
+from fastapi.responses import StreamingResponse
 
 import functions.openai_request as foar
 
@@ -16,25 +17,21 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-
 @router.post("/create_chat_message")
 async def create_chat_message(
     thread_id: int,
     user_message: str,
     user_details: dict = Depends(dp.validate_token_header),
-    cursor =  Depends(dbd.get_db_cursor)
+    cursor =  Depends(dbd.get_db_cursor),
 ):
     """
-    Create thread message
-    
+    Create chat messages in a thread
     """
-    # Get all the messages in the chat
     message_to_sent = dbm.get_recent_messages(
         user_details["azp"],
         thread_id,
         cursor=cursor,
     )
-    
     if len(message_to_sent) > 21:
         return HTTPException(status_code=400, detail="Only 20 messages are allowed per thread")
     
@@ -42,22 +39,28 @@ async def create_chat_message(
     message_to_sent = [{'role': message['role'], 'content': message['message']} for message in message_to_sent[1:]]
     message_to_sent = [system_prompt] + message_to_sent + [{"role":"user", "content":user_message}]
 
-    # Get chat reponse
     try:
-        response_message = foar.get_chat_reponse(message_to_sent)
+        response_message = foar.get_chat_response(message_to_sent)
     except Exception as e:
+        print(e)
         raise HTTPException(status_code=400, detail="Error while getting the response") from e
 
-    # Store the message
-    dbm.store_messages(
-        cursor=cursor, thread_id=thread_id,
-        request_message=user_message,
-        response_message=response_message
-    )
+    combined_message = ""
 
-    # Use StreamingResponse for streaming
-    # return StreamingResponse(chat_response, media_type="plain/text")
-    return response_message
+    async def generate():
+        nonlocal combined_message
+        for chunk in response_message:
+            combined_message += "".join(chunk)
+            yield chunk
+        
+        dbm.store_messages(
+            thread_id=thread_id,
+            request_message=user_message,
+            response_message=combined_message
+        )
+    
+    return StreamingResponse(generate(), media_type="text/plain")
+        
 
 
 @router.post("/get_chat_messages")

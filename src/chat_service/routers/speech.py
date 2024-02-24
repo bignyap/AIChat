@@ -35,7 +35,7 @@ async def get_audio(file: UploadFile = File(...)):
         return HTTPException(status_code=400, detail="Failed to decode audio")
 
     # Get chat reponse
-    chat_response = foar.get_chat_reponse(message_decoded)
+    chat_response = foar.get_chat_response(message_decoded)
     if not chat_response:
         return HTTPException(status_code=400, detail="Failed to get chat response")
 

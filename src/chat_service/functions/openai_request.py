@@ -25,17 +25,22 @@ def convert_audio_text(audio_file):
 
 # OpenAI - ChatGPT
 # Get Response to our Message
-def get_chat_reponse(message_input:List[dict]):
+def get_chat_response(message_input:List[dict]):
     """
     Chat reponse
     """
     try:
-        response = openai.chat.completions.create(
+        stream = openai.chat.completions.create(
             model="gpt-3.5-turbo",
-            messages=message_input
+            messages=message_input,
+            stream=True,
         )
-        message_text = response.choices[0].message.content
-        return message_text
+        for response in stream:
+            content = response.choices[0].delta.content
+            if content is not None:
+                yield content
+        # message_text = response.choices[0].message.content
+        # return message_text
     except Exception as e:
         return e
 
