@@ -1,22 +1,19 @@
-"""
-Database connection package
-"""
+# Database connection package
 
-import os
 from typing import List, Annotated, Any, Optional
 import mysql.connector
 from mysql.connector import Error
 from dotenv import load_dotenv
 from fastapi import HTTPException, Depends
 
-load_dotenv(".env")
+from ..config import settings
 
 # Database configuration
 DATABASE_CONFIG = {
-    'user': os.getenv("MySQL_Username"),
-    'password': os.getenv("MySQL_Password"),
-    'host': os.getenv("MySQL_HOST"),
-    'database': os.getenv("MySQL_DB"),
+    'user': settings.mysql_username,
+    'password': settings.mysql_password,
+    'host': settings.mysql_host,
+    'database': settings.mysql_db,
     'raise_on_warnings': True
 }
 

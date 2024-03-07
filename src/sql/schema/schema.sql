@@ -1,13 +1,12 @@
 CREATE TABLE `users` (
   `id` int PRIMARY KEY NOT NULL AUTO_INCREMENT,
+  `uuid` varchar(50) UNIQUE NOT NULL,
   `username` varchar(50) UNIQUE NOT NULL,
   `email` varchar(200) UNIQUE NOT NULL,
   `first_name` varchar(50) NOT NULL,
   `last_name` varchar(50) DEFAULT "",
   `date_created` datetime NOT NULL DEFAULT NOW(),
-  `date_updated` datetime NOT NULL DEFAULT NOW(),
-  `hashed_key` text NOT NULL,
-  `is_active` boolean NOT NULL DEFAULT true
+  `date_updated` datetime NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE `threads` (

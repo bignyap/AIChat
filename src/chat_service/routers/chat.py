@@ -1,19 +1,16 @@
-''' chat message endpoints '''
+# Chat message endpoints
 
-from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
+from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 
 import functions.openai_request as foar
-
 import dependencies.dependencies as dp
-
-import database.database as dbd
 import database.message as dbm
 
 router = APIRouter(
     prefix="/chat",
     tags=["chat"],
-    dependencies=[Depends(dp.validate_token_header)],
+    dependencies=[Depends(dp.get_user_info)],
     responses={404: {"description": "Not found"}},
 )
 
@@ -21,14 +18,16 @@ router = APIRouter(
 async def create_chat_message(
     thread_id: int,
     user_message: str,
-    user_details: dict = Depends(dp.validate_token_header),
-    cursor =  Depends(dbd.get_db_cursor),
+    user_and_cursor: dict = Depends(dp.get_user_and_update_info_wrapper)
 ):
     """
-    Create chat messages in a thread
+    Create a message thread
+    
     """
+    user_details, cursor = user_and_cursor
+
     message_to_sent = dbm.get_recent_messages(
-        user_details["azp"],
+        user_details["id"],
         thread_id,
         cursor=cursor,
     )
@@ -66,13 +65,15 @@ async def create_chat_message(
 @router.post("/get_chat_messages")
 async def get_chat_messages(
     thread_id: int,
-    user_details: dict = Depends(dp.validate_token_header),
-    cursor =  Depends(dbd.get_db_cursor)
+    user_and_cursor: dict = Depends(dp.get_user_and_update_info_wrapper)
 ):
     """
     Get thread message
     
     """
+
+    user_details, cursor = user_and_cursor
+
     # Save file from frontend
-    response = dbm.get_recent_messages(user_details["azp"], thread_id, cursor=cursor)
+    response = dbm.get_recent_messages(user_details["id"], thread_id, cursor=cursor)
     return response[1::]

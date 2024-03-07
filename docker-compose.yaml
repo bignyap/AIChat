@@ -65,15 +65,14 @@ services:
       context: ./src/auth
       dockerfile: ./Dockerfile
     environment:
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_ALGORITHM: ${JWT_ALGORITHM}
-      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES}
-      MySQL_HOST: ${MySQL_HOST}
-      MySQL_Username: ${MySQL_Username}
-      MySQL_Password: ${MySQL_Password}
-      MySQL_DB: ${MySQL_DB}
+      SERVER_URL: ${SERVER_URL}
+      REALM: ${REALM}
+      CLIENT_ID: ${CLIENT_ID}
+      CLIENT_SECRET: ${CLIENT_SECRET}
+      AUTHORIZATION_URL: ${AUTHORIZATION_URL}
+      TOKEN_URL: ${TOKEN_URL}
     depends_on:
-      - mysql
+      - idp
 
   llm_service:
     # image: bignya/llm_service
@@ -83,12 +82,15 @@ services:
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       AUTH_SVC_ADDRESS: ${AUTH_SVC_ADDRESS}
+      AUTHORIZATION_URL: ${AUTHORIZATION_URL}
+      TOKEN_URL: ${TOKEN_URL}
       MySQL_HOST: ${MySQL_HOST}
       MySQL_Username: ${MySQL_Username}
       MySQL_Password: ${MySQL_Password}
       MySQL_DB: ${MySQL_DB}
     depends_on:
       - mysql
+      - idp
       - auth_service
 
   chat_service:
@@ -99,12 +101,15 @@ services:
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       AUTH_SVC_ADDRESS: ${AUTH_SVC_ADDRESS}
+      AUTHORIZATION_URL: ${AUTHORIZATION_URL}
+      TOKEN_URL: ${TOKEN_URL}
       MySQL_HOST: ${MySQL_HOST}
       MySQL_Username: ${MySQL_Username}
       MySQL_Password: ${MySQL_Password}
       MySQL_DB: ${MySQL_DB}
     depends_on:
       - mysql
+      - idp
       - auth_service
 
 volumes:

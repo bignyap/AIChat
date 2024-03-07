@@ -14,7 +14,7 @@ import dependencies.dependencies as dp
 router = APIRouter(
     prefix="/speech",
     tags=["speech"],
-    dependencies=[Depends(dp.validate_token_header)],
+    dependencies=[Depends(dp.get_user_info)],
     responses={404: {"description": "Not found"}},
 )
 

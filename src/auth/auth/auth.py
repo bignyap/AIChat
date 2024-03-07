@@ -2,7 +2,7 @@
 from fastapi.security import OAuth2AuthorizationCodeBearer
 from keycloak import KeycloakOpenID # pip require python-keycloak
 
-from .config import settings
+from ..config import settings
 from fastapi import Security, HTTPException, status,Depends
 from pydantic import Json
 from .models import User

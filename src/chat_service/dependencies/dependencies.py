@@ -1,19 +1,26 @@
-"""
-Access token verifier dependencies
-"""
+
+# Access token verifier dependencies
 import os
 import json
-from fastapi import HTTPException, Depends, status
-from fastapi.security import HTTPBearer
 import httpx
+from fastapi import HTTPException, Security, Depends
+from fastapi.security import OAuth2AuthorizationCodeBearer
 
-security = HTTPBearer()
+from ..config import settings 
+from database.database import get_db_cursor
+from database.user import store_and_update_user_info
 
-async def validate_token(token: str) -> bool:
+# This is used for fastapi docs authentification
+oauth2_scheme = OAuth2AuthorizationCodeBearer(
+    authorizationUrl=os.getenv("AUTHORIZATION_URL"),
+    tokenUrl=os.getenv("TOKEN_URL"),
+)
+
+async def get_user_info(token: str = Security(oauth2_scheme)) -> dict:
     """
     validate the token
     """
-    validate_url = os.getenv("AUTH_SVC_ADDRESS")
+    validate_url = settings.auth_url
     headers = {"Authorization": f"Bearer {token}"}
 
     async with httpx.AsyncClient() as client:
@@ -25,23 +32,14 @@ async def validate_token(token: str) -> bool:
     return json.loads(response.content)
 
 
-# x_token: Annotated[str, Header()]
-
-async def validate_token_header(
-   authorization: str = Depends(security)
+# Dependency function combining get_user_info and store_and_update_user_info
+async def get_user_and_update_info_wrapper(
+    token: str = Security(oauth2_scheme),
+    cursor = Depends(get_db_cursor)
 ):
-    """
-    get_token_header
-    """
-    x_token = authorization.credentials
-    if not x_token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing credentials"
-        )
+    
+    user_detail = get_user_info(token)
 
-    try:
-        user_detail = await validate_token(x_token)
-        return user_detail
-    except Exception as e:
-        raise HTTPException(status_code=401, detail="Token validation failed") from e
+    user_detail = store_and_update_user_info(cursor, user_detail)
+
+    return user_detail, cursor

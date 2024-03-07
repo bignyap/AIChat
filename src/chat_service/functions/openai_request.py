@@ -1,11 +1,9 @@
-"""
-OpenAI Services
-
-"""
+# OpenAI Services
 
 from typing import List
-
 import openai
+
+from ..config import settings
 
 # OpenAI - Whisper
 # Convert Audio to text
@@ -16,7 +14,8 @@ def convert_audio_text(audio_file):
     try:
         transcript = openai.audio.transcriptions.create(
             model="whisper-1",
-            file=audio_file
+            file=audio_file,
+            api_key=settings.openai_api_key
         )
         message_text = transcript.text
         return message_text
@@ -34,6 +33,7 @@ def get_chat_response(message_input:List[dict]):
             model="gpt-3.5-turbo",
             messages=message_input,
             stream=True,
+            api_key=settings.openai_api_key
         )
         for response in stream:
             content = response.choices[0].delta.content
@@ -56,7 +56,8 @@ def text_to_speech(input_text):
         response = openai.audio.speech.create(
             model="tts-1",
             voice="alloy",
-            input=input_text
+            input=input_text,
+            api_key=settings.openai_api_key
         )
         return response
         # .stream_to_file(speech_file_path)
