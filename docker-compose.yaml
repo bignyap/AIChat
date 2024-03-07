@@ -62,7 +62,7 @@ services:
   auth_service:
     # image: bignya/auth
     build:
-      context: ./src/auth
+      context: ./src/auth_service
       dockerfile: ./Dockerfile
     environment:
       SERVER_URL: ${SERVER_URL}
