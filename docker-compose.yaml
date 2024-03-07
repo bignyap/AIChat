@@ -1,56 +1,47 @@
 version: "3.9"
 services:
-  auth:
-    # image: bignya/auth
-    build:
-      context: ./src/auth
-      dockerfile: ./Dockerfile
-    environment:
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_ALGORITHM: ${JWT_ALGORITHM}
-      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES}
-      MySQL_HOST: ${MySQL_HOST}
-      MySQL_Username: ${MySQL_Username}
-      MySQL_Password: ${MySQL_Password}
-      MySQL_DB: ${MySQL_DB}
+  proxy:
+    image: envoyproxy/envoy:v1.25.2
     ports:
-      - 8001:8001
-    expose:
-     - '8001'
-    depends_on:
-      - mysql
+      - 80:80
+      - 443:443
+      - 8443:8443
+    volumes:
+      - ./envoy.yaml:/etc/envoy/envoy.yaml
 
-  llm_service:
-    # image: bignya/llm_service
-    build:
-      context: ./src/llm_service
-      dockerfile: ./Dockerfile
+  idp:
+    image: quay.io/keycloak/keycloak:21.1
+    command: start
     environment:
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-      AUTH_SVC_ADDRESS: ${AUTH_SVC_ADDRESS}
-    ports:
-      - 8002:8002
-    expose:
-     - '8002'
-    depends_on:
-      - mysql
-      - auth
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
 
-  chat_service:
-    # image: bignya/llm_service
-    build:
-      context: ./src/chat_service
-      dockerfile: ./Dockerfile
-    environment:
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-      AUTH_SVC_ADDRESS: ${AUTH_SVC_ADDRESS}
-    ports:
-      - 8003:8003
-    expose:
-     - '8003'
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres/keycloak
+      KC_DB_USERNAME: ${POSTGRES_USER}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
+
+      KC_HOSTNAME_ADMIN_URL: https://localhost:8443/auth
+      KC_HOSTNAME_URL: https://localhost/auth
+
+      KC_HTTP_RELATIVE_PATH: /auth
+      KC_HOSTNAME_STRICT: 'false'
+      KC_PROXY: edge
+
+      KC_HEALTH_ENABLED: 'true'
     depends_on:
-      - mysql
-      - auth
+      - postgres
+    volumes:
+     - 'mysql_data:/var/lib/mysql'
+
+  postgres:
+    image: postgres:15.3-bullseye
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - 'postgres_data:/var/lib/postgresql/data'
 
   mysql:
    image: mysql:8.0.32
@@ -68,6 +59,56 @@ services:
    volumes:
      - 'mysql_data:/var/lib/mysql'
 
+  auth_service:
+    # image: bignya/auth
+    build:
+      context: ./src/auth
+      dockerfile: ./Dockerfile
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ALGORITHM: ${JWT_ALGORITHM}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES}
+      MySQL_HOST: ${MySQL_HOST}
+      MySQL_Username: ${MySQL_Username}
+      MySQL_Password: ${MySQL_Password}
+      MySQL_DB: ${MySQL_DB}
+    depends_on:
+      - mysql
+
+  llm_service:
+    # image: bignya/llm_service
+    build:
+      context: ./src/llm_service
+      dockerfile: ./Dockerfile
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      AUTH_SVC_ADDRESS: ${AUTH_SVC_ADDRESS}
+      MySQL_HOST: ${MySQL_HOST}
+      MySQL_Username: ${MySQL_Username}
+      MySQL_Password: ${MySQL_Password}
+      MySQL_DB: ${MySQL_DB}
+    depends_on:
+      - mysql
+      - auth_service
+
+  chat_service:
+    # image: bignya/llm_service
+    build:
+      context: ./src/chat_service
+      dockerfile: ./Dockerfile
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      AUTH_SVC_ADDRESS: ${AUTH_SVC_ADDRESS}
+      MySQL_HOST: ${MySQL_HOST}
+      MySQL_Username: ${MySQL_Username}
+      MySQL_Password: ${MySQL_Password}
+      MySQL_DB: ${MySQL_DB}
+    depends_on:
+      - mysql
+      - auth_service
+
 volumes:
   mysql_data:
+    driver: local
+  postgres_data:
     driver: local
