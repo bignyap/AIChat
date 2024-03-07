@@ -189,9 +189,9 @@ static_resources:
               domains: ["*"]
               routes:
               - match:
-                  path_separated_prefix: "/auth"
+                  path_separated_prefix: "/auth_service"
                 route:
-                  cluster: service_auth
+                  cluster: service_auth_service
 
               - match:
                   path_separated_prefix: "/llm_service"
