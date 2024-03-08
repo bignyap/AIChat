@@ -62,7 +62,7 @@ async def create_chat_message(
         
 
 
-@router.post("/get_chat_messages")
+@router.get("/get_chat_messages")
 async def get_chat_messages(
     thread_id: int,
     user_and_cursor: dict = Depends(dp.get_user_and_update_info_wrapper)

@@ -189,8 +189,15 @@ static_resources:
               domains: ["*"]
               routes:
               - match:
-                  path_separated_prefix: "/auth_service"
+                  prefix: "/auth_service/"
                 route:
+                  prefix_rewrite: "/"  # Rewrite /auth_service/* to /*
+                  cluster: service_auth_service
+
+              - match:
+                  prefix: "/auth_service"
+                route:
+                  prefix_rewrite: "/"  # Rewrite /auth_service to /
                   cluster: service_auth_service
 
               - match:
@@ -199,8 +206,15 @@ static_resources:
                   cluster: service_llm_service
 
               - match:
-                  path_separated_prefix: "/chat_service"
+                  prefix: "/chat_service/"
                 route:
+                  prefix_rewrite: "/"  # Rewrite /auth_service/* to /*
+                  cluster: service_chat_service
+                  
+              - match:
+                  prefix: "/chat_service"
+                route:
+                  prefix_rewrite: "/"  # Rewrite /auth_service to /
                   cluster: service_chat_service
 
               - match:

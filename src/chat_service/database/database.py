@@ -6,7 +6,7 @@ from mysql.connector import Error
 from dotenv import load_dotenv
 from fastapi import HTTPException, Depends
 
-from ..config import settings
+from config import settings
 
 # Database configuration
 DATABASE_CONFIG = {

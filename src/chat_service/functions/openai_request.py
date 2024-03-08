@@ -3,7 +3,7 @@
 from typing import List
 import openai
 
-from ..config import settings
+from config import settings
 
 # OpenAI - Whisper
 # Convert Audio to text

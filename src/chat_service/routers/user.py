@@ -5,13 +5,13 @@ from fastapi import APIRouter, Depends
 from dependencies.dependencies import get_user_and_update_info_wrapper, get_user_info
 
 router = APIRouter(
-    prefix="/thread",
-    tags=["thread"],
+    prefix="/user",
+    tags=["user"],
     dependencies=[Depends(get_user_info)],
     responses={404: {"description": "Not found"}},
 )
 
-@router.post("/get_user_info")
+@router.get("/get_user_info")
 async def get_user(
     user_and_cursor: dict = Depends(get_user_and_update_info_wrapper)
 ):

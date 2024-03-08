@@ -6,7 +6,7 @@ import httpx
 from fastapi import HTTPException, Security, Depends
 from fastapi.security import OAuth2AuthorizationCodeBearer
 
-from ..config import settings 
+from config import settings 
 from database.database import get_db_cursor
 from database.user import store_and_update_user_info
 
