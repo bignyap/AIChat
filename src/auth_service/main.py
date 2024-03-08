@@ -13,7 +13,11 @@ from routers.auth import router as auth_router
 
 load_dotenv()
 
-app = FastAPI()
+app = FastAPI(
+    description="Auth service using Keycloak",
+    title="Auth service Application",
+    root_path = "/auth_service/v1"
+)
 
 # CORS - Middleware
 app.add_middleware(

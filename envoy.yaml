@@ -189,6 +189,12 @@ static_resources:
               domains: ["*"]
               routes:
               - match:
+                  prefix: "/auth_service/v1"
+                route:
+                  prefix_rewrite: "/auth_service/v1"
+                  cluster: service_auth_service
+                  
+              - match:
                   prefix: "/auth_service/"
                 route:
                   prefix_rewrite: "/"  # Rewrite /auth_service/* to /*
@@ -204,6 +210,12 @@ static_resources:
                   path_separated_prefix: "/llm_service"
                 route:
                   cluster: service_llm_service
+
+              - match:
+                  prefix: "/chat_service/v1"
+                route:
+                  prefix_rewrite: "/chat_service/v1"
+                  cluster: service_chat_service
 
               - match:
                   prefix: "/chat_service/"

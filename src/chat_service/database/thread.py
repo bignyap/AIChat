@@ -41,20 +41,19 @@ def create_thread(
 
 
 def list_thread(
-    cursor: Annotated[Any, Depends(db.get_db_cursor(dictionary=True))],  
+    cursor: Annotated[Any, Depends(db.get_db_cursor)],
     user_id: int
 ):
     """
     List all thread for the user
     """
     select_stmt = "SELECT * FROM threads WHERE creator_id=%s"
-    threads = db.select_data(cursor=cursor, query=select_stmt, values=(user_id,))
-    
+    threads = db.select_data(cursor=cursor, query=select_stmt, values=(user_id,), dictionary=True)
     return threads
 
 
 def delete_thread(
-    cursor: Annotated[Any, Depends(db.get_db_cursor(dictionary=False))], 
+    cursor: Annotated[Any, Depends(db.get_db_cursor)],
     thread_id: int, user_id: int
 ):
     """

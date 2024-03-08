@@ -15,7 +15,8 @@ from routers.speech import router as speech_router
 # Initialize App
 app = FastAPI(
     description="Chat service using OpenAI and FastAPI",
-    title="OpenAPI Chat Application"
+    title="OpenAPI Chat Application",
+    root_path = "/chat_service/v1"
 )
 
 # CORS - Middleware

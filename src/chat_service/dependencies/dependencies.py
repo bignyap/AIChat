@@ -8,7 +8,7 @@ from fastapi.security import OAuth2AuthorizationCodeBearer
 
 from config import settings 
 from database.database import get_db_cursor
-from database.user import store_and_update_user_info
+from database.user import store_or_update_user_info
 
 # This is used for fastapi docs authentification
 oauth2_scheme = OAuth2AuthorizationCodeBearer(
@@ -32,14 +32,14 @@ async def get_user_info(token: str = Security(oauth2_scheme)) -> dict:
     return json.loads(response.content)
 
 
-# Dependency function combining get_user_info and store_and_update_user_info
-async def get_user_and_update_info_wrapper(
+# Dependency function combining get_user_info and store_or_update_user_info
+async def get_user_and_update_info(
     token: str = Security(oauth2_scheme),
     cursor = Depends(get_db_cursor)
 ):
-    
-    user_detail = get_user_info(token)
 
-    user_detail = store_and_update_user_info(cursor, user_detail)
+    user_detail = await get_user_info(token)
+
+    user_detail = store_or_update_user_info(cursor, user_detail)
 
     return user_detail, cursor

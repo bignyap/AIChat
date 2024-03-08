@@ -3,7 +3,6 @@
 from typing import List, Annotated, Any, Optional
 import mysql.connector
 from mysql.connector import Error
-from dotenv import load_dotenv
 from fastapi import HTTPException, Depends
 
 from config import settings
@@ -44,12 +43,12 @@ def get_db_connection():
 
 
 # Dependency to get a database cursor
-def get_db_cursor(connection=Depends(get_db_connection), dictionary=False):
+def get_db_cursor(connection=Depends(get_db_connection)):
     '''
     Provides a cursor to interact with the database.
     '''
     try:
-        cursor = connection.cursor(dictionary=dictionary)
+        cursor = connection.cursor()
         yield cursor
     except Error as error:
         connection.rollback()
@@ -72,13 +71,21 @@ def execute_select_stmt(
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}") from e
     
     
-def select_data(cursor: Annotated[Any, Depends(get_db_cursor)], query: str, values: tuple = ()):
+def select_data(
+    cursor: Annotated[Any, Depends(get_db_cursor)],
+    query: str, values: tuple = (), dictionary=False
+):
     """
     Example function for SQL select
     """
     execute_select_stmt(cursor, query, values)
-    result = cursor.fetchall()
-    return result
+    rows = cursor.fetchall()
+
+    if (rows and dictionary):
+        column_names = [col[0] for col in cursor.description]
+        rows = [{column_names[i]: value for i, value in enumerate(row)} for row in rows]
+
+    return rows
 
 
 def execute_insertion_stmt(

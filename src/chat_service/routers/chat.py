@@ -18,7 +18,7 @@ router = APIRouter(
 async def create_chat_message(
     thread_id: int,
     user_message: str,
-    user_and_cursor: dict = Depends(dp.get_user_and_update_info_wrapper)
+    user_and_cursor: dict = Depends(dp.get_user_and_update_info)
 ):
     """
     Create a message thread
@@ -41,7 +41,6 @@ async def create_chat_message(
     try:
         response_message = foar.get_chat_response(message_to_sent)
     except Exception as e:
-        print(e)
         raise HTTPException(status_code=400, detail="Error while getting the response") from e
 
     combined_message = ""
@@ -65,7 +64,7 @@ async def create_chat_message(
 @router.get("/get_chat_messages")
 async def get_chat_messages(
     thread_id: int,
-    user_and_cursor: dict = Depends(dp.get_user_and_update_info_wrapper)
+    user_and_cursor: dict = Depends(dp.get_user_and_update_info)
 ):
     """
     Get thread message

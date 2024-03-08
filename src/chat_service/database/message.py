@@ -44,15 +44,15 @@ def get_thread_messages(thread_id: int, cursor = Depends(db.get_db_cursor)):
     sql_stmt = "SELECT messages.id, messages.message, messages.role, messages.date_created " \
     "FROM messages WHERE thread_id = %s"
     
-    messages_data = db.select_data(cursor=cursor, query=sql_stmt, values=(thread_id,))
+    messages_data = db.select_data(cursor=cursor, query=sql_stmt, values=(thread_id,), dictionary=True)
   
     messages = []
     for msg in messages_data:
         message = {
-            "message_id": msg[0],
-            "message": msg[1],
-            "role": msg[2],
-            "date_created": msg[3].isoformat()
+            "message_id": msg["id"],
+            "message": msg["message"],
+            "role": msg["role"],
+            "date_created": msg["date_created"].isoformat()
         }
         messages.append(message)
     

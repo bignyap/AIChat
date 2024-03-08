@@ -20,7 +20,7 @@ router = APIRouter(
 @router.post("/create_chat_thread")
 async def create_chat_thread(
     name: str = uuid.uuid4(),
-    user_and_cursor: dict = Depends(dp.get_user_and_update_info_wrapper)
+    user_and_cursor: dict = Depends(dp.get_user_and_update_info)
 ):
     """
     Create a message thread
@@ -39,14 +39,14 @@ async def create_chat_thread(
 
 @router.get("/list_chat_thread")
 async def list_chat_thread(
-    user_and_cursor: dict = Depends(dp.get_user_and_update_info_wrapper)
+    user_and_cursor: dict = Depends(dp.get_user_and_update_info)
 ):
     """
     Create a message thread
     
     """
     user_details, cursor = user_and_cursor
-
+    
     try:
         res = dbt.list_thread(cursor, user_details['id'])
         return res
@@ -59,7 +59,7 @@ async def list_chat_thread(
 @router.delete("/delete_chat_thread")
 async def delete_chat_thread(
     thread_id: int,
-    user_and_cursor: dict = Depends(dp.get_user_and_update_info_wrapper)
+    user_and_cursor: dict = Depends(dp.get_user_and_update_info)
 ):
     """
     Create a message thread

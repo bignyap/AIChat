@@ -3,19 +3,24 @@
 from typing import Any, Annotated
 from fastapi import HTTPException, Depends
 
-from .database import get_db_cursor, insert_data
+from .database import get_db_cursor, insert_data, select_data
 
-def store_and_update_user_info(
+
+def store_or_update_user_info(
     cursor: Annotated[Any, Depends(get_db_cursor)],
     user_info: dict
 ):
+    '''
+    Return if the user already exists or store if not
+    '''
+    
     try:
-        query = "SELECT * FROM users WHERE uuid = (%s,)"
-        cursor.execute(query, (user_info["id"]))
-        user_detail = cursor.fetchone()
+        query = "SELECT * FROM users WHERE uuid = %s"
+        values = (user_info["id"],)
+        user_detail = select_data(cursor = cursor, query = query, values = values, dictionary = True)
 
-        if user_detail.length() > 0:
-            return user_detail
+        if user_detail:
+            return user_detail[0]
 
         query = "INSERT INTO users (uuid, username, email, first_name, last_name) VALUES (%s, %s, %s, %s, %s)"
         values = (
