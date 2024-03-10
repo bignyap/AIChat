@@ -1,5 +1,6 @@
 # LLM -- OpenAI GPT Applications
-Sample Python Project To Show LLM Capability
+
+Sample Python Project To Show LLM Capabilities. For frontend, you can refer https://github.com/bignyap/llm-fe
 
 ### Keycloak Authentication 
  - src/auth_service
