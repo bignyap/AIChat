@@ -4,17 +4,17 @@ Sample Python Project To Show LLM Capability
 ### Keycloak Authentication 
  - src/auth_service
 
-### LLM Interactive Chat Application -- src/chat_service
+### Interactive Chat Application -- src/chat_service
  - Company Name with simple prompt engineering
  - Document Summarizer
  - Video to Audio
  - You Tube Video Summarizer
 
-### LLM Non-Interactive Applications -- src/llm_service
+### Non-Interactive Applications -- src/llm_service
  - Interactive chat interface using LLMs
 
 
-### Steps to run this application:
+### How to Run:
  - Navigate to src/ folder and open terminal
  - Create a .env file and fill in the config values mentioned in .env.sample
  - Feel free to remove the mysql service from docker-compose file if you already have a mysql instance running. In that case, create the username and database appropriately. If you are using the mysql service, then you do not have worry about changing anything.
