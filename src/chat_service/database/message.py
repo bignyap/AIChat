@@ -45,7 +45,7 @@ def get_thread_messages(
     """
 
     sql_stmt = "SELECT id, message_group, message, role, date_created FROM messages WHERE thread_id = %s "\
-    "GROUP BY message_group, id ORDER BY id DESC"
+    "GROUP BY message_group, id ORDER BY id"
     
     messages_data = db.select_data(cursor=cursor, query=sql_stmt, values=(thread_id,), dictionary=True)
     
