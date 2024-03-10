@@ -5,6 +5,7 @@ import json
 import httpx
 from fastapi import HTTPException, Security, Depends
 from fastapi.security import OAuth2AuthorizationCodeBearer
+from ssl import SSLContext, CERT_NONE
 
 from config import settings 
 from database.database import get_db_cursor
@@ -18,26 +19,34 @@ oauth2_scheme = OAuth2AuthorizationCodeBearer(
 
 async def get_user_info(token: str = Security(oauth2_scheme)) -> dict:
     """
-    validate the token
+    Validate the token
     """
     validate_url = settings.auth_url
     headers = {"Authorization": f"Bearer {token}"}
 
-    async with httpx.AsyncClient() as client:
-        response = await client.post(validate_url, headers=headers)
-    
-    if response.status_code != 200:
-        raise HTTPException(status_code=response.status_code, detail=response.content)
+    # Create a custom SSL context that doesn't verify certificates
+    ssl_context = SSLContext()
+    ssl_context.verify_mode = CERT_NONE
 
-    return json.loads(response.content)
+    async with httpx.AsyncClient(verify=ssl_context) as client:
+        try:
+            response = await client.post(validate_url, headers=headers)
+            response.raise_for_status()
+            return response.json()
+        except httpx.HTTPError as e:
+            raise HTTPException(status_code=500, detail=str(e)) from e
 
+
+        
 
 # Dependency function combining get_user_info and store_or_update_user_info
 async def get_user_and_update_info(
     token: str = Security(oauth2_scheme),
     cursor = Depends(get_db_cursor)
 ):
-
+    '''
+    Depency for every request
+    '''
     user_detail = await get_user_info(token)
 
     user_detail = store_or_update_user_info(cursor, user_detail)

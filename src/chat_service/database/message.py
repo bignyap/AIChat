@@ -3,10 +3,9 @@ Database related operations
 """
 
 import datetime
-
+import uuid
 from typing import List, Any, Annotated
 from fastapi import HTTPException, Depends
-
 from . import utils
 from . import database as db
 from . import thread as th
@@ -37,27 +36,32 @@ def get_recent_messages(
     return messages
 
 
-def get_thread_messages(thread_id: int, cursor = Depends(db.get_db_cursor)):
+def get_thread_messages(
+    thread_id: int,
+    cursor=Depends(db.get_db_cursor)
+):
     """
     Find all the messages in the thread
     """
-    sql_stmt = "SELECT messages.id, messages.message, messages.role, messages.date_created " \
-    "FROM messages WHERE thread_id = %s"
+
+    sql_stmt = "SELECT id, message_group, message, role, date_created FROM messages WHERE thread_id = %s "\
+    "GROUP BY message_group, id ORDER BY id DESC"
     
     messages_data = db.select_data(cursor=cursor, query=sql_stmt, values=(thread_id,), dictionary=True)
-  
+    
     messages = []
-    for msg in messages_data:
-        message = {
-            "message_id": msg["id"],
-            "message": msg["message"],
-            "role": msg["role"],
-            "date_created": msg["date_created"].isoformat()
-        }
-        messages.append(message)
+    if messages_data:
+        for msg in messages_data:
+            message = {
+                "message_id": msg["id"],
+                "message_group": msg["message_group"],
+                "message": msg["message"],
+                "role": msg["role"],
+                "date_created": msg["date_created"].isoformat()
+            }
+            messages.append(message)
     
     return messages
-
 
 
 def store_messages(thread_id, request_message, response_message):
@@ -72,9 +76,10 @@ def store_messages(thread_id, request_message, response_message):
         user_message = {"role": "user", "content": request_message}
         assistant_message = {"role": "assistant", "content": response_message}
         messages = [user_message, assistant_message]
+        group_uuid = str(uuid.uuid4())
 
         try:
-            message_ids = insert_messages(cursor, thread_id, messages)
+            message_ids = insert_messages(cursor, thread_id, messages, group_uuid)
         except Exception as e:
             connection.rollback()
             raise HTTPException(status_code=500, detail="Failed to store messages") from e
@@ -91,17 +96,18 @@ def store_messages(thread_id, request_message, response_message):
 def insert_messages(
     cursor: Annotated[Any, Depends(db.get_db_cursor)],
     thread_id: int,
-    messages: List[dict]
+    messages: List[dict],
+    group_uuid: str
 ):
     """
     Insert message to database
     """
 
     insert_stmt = (
-        "INSERT INTO messages(thread_id, message, date_created, role)"
-        "VALUES (%s, %s, %s, %s)"
+        "INSERT INTO messages(thread_id, message_group, message, date_created, role)"
+        "VALUES (%s, %s, %s, %s, %s)"
     ) 
-    data = [(thread_id, message['content'], datetime.datetime.now(), message['role']) for message in messages]
+    data = [(thread_id, group_uuid, message['content'], datetime.datetime.now(), message['role']) for message in messages]
     message_ids = db.execute_insertion_stmt(cursor, query=insert_stmt, values=data)
     
     return message_ids

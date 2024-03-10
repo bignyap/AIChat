@@ -18,6 +18,7 @@ CREATE TABLE `threads` (
 
 CREATE TABLE `messages` (
   `id` int PRIMARY KEY NOT NULL AUTO_INCREMENT,
+  `message_group` varchar(50) NOT NULL,
   `thread_id` int NOT NULL,
   `date_created` datetime NOT NULL,
   `message` text NOT NULL,

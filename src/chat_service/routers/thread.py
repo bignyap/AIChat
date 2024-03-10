@@ -2,7 +2,7 @@
 
 import uuid
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Form
 
 import database.database as dbd
 import database.thread as dbt
@@ -16,10 +16,9 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-
 @router.post("/create_chat_thread")
 async def create_chat_thread(
-    name: str = uuid.uuid4(),
+    name: str = Form(None),
     user_and_cursor: dict = Depends(dp.get_user_and_update_info)
 ):
     """
@@ -29,6 +28,9 @@ async def create_chat_thread(
     user_details, cursor = user_and_cursor
 
     try:
+        if name is None:
+            name = str(uuid.uuid4())
+        
         res = dbt.create_thread(cursor, name, user_details['id'])
         return res
     except KeyError as e:
@@ -56,7 +58,7 @@ async def list_chat_thread(
         raise HTTPException(status_code=400, detail="Error while fetching the threads") from e
     
 
-@router.delete("/delete_chat_thread")
+@router.delete("/delete_chat_thread/{thread_id}")
 async def delete_chat_thread(
     thread_id: int,
     user_and_cursor: dict = Depends(dp.get_user_and_update_info)
