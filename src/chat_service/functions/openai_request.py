@@ -25,7 +25,7 @@ def convert_audio_text(audio_file):
 
 # OpenAI - ChatGPT
 # Get Response to our Message
-def get_chat_response(message_input:List[dict]):
+def get_chat_response(message_input:List[dict], model:str = "gpt-3.5-turbo"):
     """
     Chat reponse
     """
@@ -33,7 +33,7 @@ def get_chat_response(message_input:List[dict]):
         client = openai.OpenAI(api_key=settings.openai_api_key)
 
         stream = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model=model,
             messages=message_input,
             stream=True
         )
