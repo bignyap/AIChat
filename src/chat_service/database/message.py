@@ -11,6 +11,64 @@ from . import database as db
 from . import thread as th
 
 
+def get_default_model(
+    user_id:int, 
+    cursor = Depends(db.get_db_cursor)
+):
+    """
+    Get the default chat model to use
+    """
+    sql_stmt = "SELECT default_model from user_model WHERE user_id = %s"
+    
+    return db.select_data(cursor=cursor, query=sql_stmt, values=(user_id,), dictionary=False)
+
+
+def update_default_model(
+    user_id:int, model_name: str,
+    cursor = Depends(db.get_db_cursor)
+):
+    """
+    Get the default chat model to use
+    """
+    sql_stmt = "UPDATE user_model SET default_model = %s WHERE user_id = %s"
+    db.execute_select_stmt(cursor=cursor, query=sql_stmt, values=(model_name, user_id))
+
+    return
+
+def insert_default_model(
+    user_id:int, model_name: str,
+    cursor = Depends(db.get_db_cursor)
+):
+    """
+    Get the default chat model to use
+    """
+    sql_stmt = (
+        "INSERT INTO user_model(user_id, default_model)"
+        "VALUES (%s, %s)"
+    )
+    db.execute_insertion_stmt(cursor=cursor, query=sql_stmt, values=[(user_id, model_name,)])
+
+    return
+
+
+def check_default_model(
+    user_id:int,
+    cursor = Depends(db.get_db_cursor)
+):
+    """
+    Get the default chat model, if not stor the default value
+    """
+    model_name = get_default_model(user_id, cursor=cursor)
+
+    if (len(model_name) < 1):
+        model_name = "gpt-3.5-turbo"
+        insert_default_model(user_id, model_name, cursor=cursor)
+    else:
+        model_name = model_name[0][0]
+
+    return model_name
+
+
 def get_recent_messages(
     user_id: int, thread_id: int,
     cursor = Depends(db.get_db_cursor)
