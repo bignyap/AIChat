@@ -87,7 +87,7 @@ async def update_default_chat_model(
     return dbm.update_default_model(user_details["id"], default_model_name, cursor=cursor)
 
 
-@router.put("/get_default_chat_model")
+@router.get("/get_default_chat_model")
 async def get_default_chat_model(
     user_and_cursor: dict = Depends(dp.get_user_and_update_info)
 ):
