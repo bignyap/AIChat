@@ -3,7 +3,8 @@ Schema Models
 """
 
 import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+from typing import Optional
 
 class User(BaseModel):
     '''Represents User class'''
@@ -29,3 +30,8 @@ class ThreadMessage(BaseModel):
     '''Represents Thread Message Link'''
     message_id: int
     thread_id: int
+
+class UpdateThreadDetails(BaseModel):
+    '''Pydantic model for user_details'''
+    name: Optional[str] = Field(None, description="The new name of the thread")
+    prompt: Optional[str] = Field(None, description="The new prompt of the thread")

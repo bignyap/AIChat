@@ -8,6 +8,7 @@ from typing import Any, Annotated
 from fastapi import HTTPException, Depends
 
 from . import database as db
+from . import model as mo
 
 
 def is_accessible_thread(user_id: int, thread_id: int, cursor=Depends(db.get_db_cursor)):
@@ -89,6 +90,40 @@ def delete_all_thread_message(
     # Delete the message
     delete_stmt = "DELETE FROM messages WHERE thread_id = %s"
     db.execute_select_stmt(cursor, delete_stmt, values = (thread_id, ))
+
+
+def update_thread(
+    cursor: Annotated[Any, Depends(db.get_db_cursor)],
+    thread_id: int, user_id: int,
+    update_details: mo.UpdateThreadDetails
+):
+    """
+    Update an existing thread if the user has access
+    """
+
+    # Check if the user has access to the thread
+    is_thread_accessible = is_accessible_thread(user_id, thread_id, cursor=cursor)
+    if not is_thread_accessible:
+        raise HTTPException(status_code=403, detail="Not able to update the thread")
+    
+    # Generate the SQL statement conditionally based on the columns provided
+    set_parts = []
+    values = []
+    if update_details.name is not None:
+        set_parts.append("name = %s")
+        values.append(update_details.name)
+    if update_details.prompt is not None:
+        set_parts.append("prompt = %s")
+        values.append(update_details.prompt)
+
+    if not set_parts:
+        raise HTTPException(status_code=400, detail="No update fields provided")
+
+    update_thread_statement = f"UPDATE threads SET {', '.join(set_parts)} WHERE id = %s;"
+    values.append(thread_id)
+
+    # Update the thread
+    db.execute_select_stmt(cursor, update_thread_statement, values=tuple(values))
 
 
 
