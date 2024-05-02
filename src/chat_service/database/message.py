@@ -18,7 +18,7 @@ def get_default_model(
     """
     Get the default chat model to use
     """
-    sql_stmt = "SELECT default_model from user_model WHERE user_id = %s"
+    sql_stmt = "SELECT default_model from user_setting WHERE user_id = %s"
     
     return db.select_data(cursor=cursor, query=sql_stmt, values=(user_id,), dictionary=False)
 
@@ -30,7 +30,7 @@ def update_default_model(
     """
     Get the default chat model to use
     """
-    sql_stmt = "UPDATE user_model SET default_model = %s WHERE user_id = %s"
+    sql_stmt = "UPDATE user_setting SET default_model = %s WHERE user_id = %s"
     db.execute_select_stmt(cursor=cursor, query=sql_stmt, values=(model_name, user_id))
 
     return
@@ -43,7 +43,7 @@ def insert_default_model(
     Get the default chat model to use
     """
     sql_stmt = (
-        "INSERT INTO user_model(user_id, default_model)"
+        "INSERT INTO user_setting(user_id, default_model)"
         "VALUES (%s, %s)"
     )
     db.execute_insertion_stmt(cursor=cursor, query=sql_stmt, values=[(user_id, model_name,)])

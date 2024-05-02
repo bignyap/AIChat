@@ -107,6 +107,8 @@ services:
       MySQL_Username: ${MySQL_Username}
       MySQL_Password: ${MySQL_Password}
       MySQL_DB: ${MySQL_DB}
+    volumes:
+      - ./src/chat_service:/app
     depends_on:
       - mysql
       - idp

@@ -11,6 +11,7 @@ from routers.user import router as user_router
 from routers.thread import router as thread_router
 from routers.chat import router as chat_router
 from routers.speech import router as speech_router
+from routers.prompt import router as prompt_router
 
 # Initialize App
 app = FastAPI(
@@ -32,7 +33,8 @@ app.add_middleware(
 app.include_router(user_router)
 app.include_router(thread_router)
 app.include_router(chat_router)
-app.include_router(speech_router)
+# app.include_router(speech_router)
+app.include_router(prompt_router)
 
 # Check Health
 @app.get("/")
