@@ -6,9 +6,10 @@ import datetime
 import uuid
 from typing import List, Any, Annotated
 from fastapi import HTTPException, Depends
-from . import utils
+# from . import utils
 from . import database as db
 from . import thread as th
+from . import prompt as dbp
 
 
 def get_default_model(
@@ -83,15 +84,52 @@ def get_recent_messages(
         raise HTTPException(status_code=400, detail="Not able to retrieve the message thread")
     
     # Get the system prompt
-    learn_instruction = utils.get_random_system_prompt()
+    try:
+        system_prompt = get_thread_prompt(cursor=cursor, thread_id=thread_id, user_id=user_id)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Failed to get system prompt for the thread") from e
 
+    system_prompt = {
+        "role": "system",
+        "content":system_prompt
+    }
+    
     # Get the messages in the thread
     messages = get_thread_messages(thread_id, cursor=cursor)
 
     # Append instruction to message
-    messages.insert(0, learn_instruction)
+    messages.insert(0, system_prompt)
 
     return messages
+
+
+def get_thread_prompt(
+    thread_id: int, user_id: int,
+    cursor=Depends(db.get_db_cursor)
+):
+    """
+    Find all the messages in the thread
+    """
+
+    sql_stmt = "SELECT prompt_id, prompt FROM threads WHERE id = %s"
+    
+    prompt_details = db.select_data(cursor=cursor, query=sql_stmt, values=(thread_id,), dictionary=True)
+    prompt_details = prompt_details[0]
+
+    if prompt_details["prompt"] is None and prompt_details["prompt_id"] is None:
+        return None
+    
+    if prompt_details["prompt"] is not None:
+        return prompt_details["prompt"]
+
+    if prompt_details["prompt_id"] is None:
+        prompt_id = dbp.check_default_prompt(cursor=cursor, user_id=user_id)
+
+    prompt_id = prompt_details["prompt_id"]
+
+    prompt = dbp.get_user_prompt(cursor=cursor, prompt_id=prompt_id)
+        
+    return prompt["prompt"]
 
 
 def get_thread_messages(

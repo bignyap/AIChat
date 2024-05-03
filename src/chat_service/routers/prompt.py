@@ -91,3 +91,30 @@ async def update_user_prompt(
         raise HTTPException(status_code=400, detail="Invalid token") from e
     except Exception as e:
         raise HTTPException(status_code=400, detail="Error while updating the prompt") from e
+    
+
+@router.put("/update_default_user_prompt")
+async def update_default_user_prompt(
+    default_prompt_id: int = Form(...),
+    user_and_cursor: dict = Depends(dp.get_user_and_update_info)
+):
+    """
+    Update the default prompt for the user
+    
+    """
+    user_details, cursor = user_and_cursor
+
+    return dbp.update_default_prompt(user_details["id"], default_prompt_id, cursor=cursor)
+
+
+@router.get("/get_default_user_prompt")
+async def get_default_user_prompt(
+    user_and_cursor: dict = Depends(dp.get_user_and_update_info)
+):
+    """
+    Get the default prompt for the user
+    
+    """
+    user_details, cursor = user_and_cursor
+
+    return dbp.check_default_prompt(user_details["id"], cursor=cursor)

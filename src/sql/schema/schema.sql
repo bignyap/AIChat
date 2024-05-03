@@ -18,7 +18,7 @@ CREATE TABLE `user_prompt` (
 
 CREATE TABLE `user_setting` (
   `user_id` int NOT NULL,
-  `default_model` varchar(250) NOT NULL,
+  `default_model` varchar(250) DEFAULT NULL,
   `prompt_id` int DEFAULT NULL
 );
 
