@@ -129,7 +129,7 @@ def get_thread_prompt(
 
     prompt = dbp.get_user_prompt(cursor=cursor, prompt_id=prompt_id)
         
-    return prompt["prompt"]
+    return prompt[0]["prompt"]
 
 
 def get_thread_messages(

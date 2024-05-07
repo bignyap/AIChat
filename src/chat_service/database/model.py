@@ -35,3 +35,4 @@ class UpdateThreadDetails(BaseModel):
     '''Pydantic model for user_details'''
     name: Optional[str] = Field(None, description="The new name of the thread")
     prompt: Optional[str] = Field(None, description="The new prompt of the thread")
+    prompt_id: Optional[int] = Field(None, description="Prompt id for the thread")

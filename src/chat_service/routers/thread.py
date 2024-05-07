@@ -83,6 +83,7 @@ async def update_chat_thread(
     thread_id: int,
     name: str = Form(None),
     prompt: str = Form(None),
+    prompt_id: int = Form(None),
     user_and_cursor: dict = Depends(dp.get_user_and_update_info)
 ):
     """
@@ -90,7 +91,7 @@ async def update_chat_thread(
     
     """
     user_details, cursor = user_and_cursor
-    update_details = UpdateThreadDetails(name=name, prompt=prompt)
+    update_details = UpdateThreadDetails(name=name, prompt=prompt, prompt_id=prompt_id)
     try:
         res = dbt.update_thread(cursor, thread_id, user_details['id'], update_details)
         return res

@@ -115,6 +115,9 @@ def update_thread(
     if update_details.prompt is not None:
         set_parts.append("prompt = %s")
         values.append(update_details.prompt)
+    if update_details.prompt_id is not None:
+        set_parts.append("prompt_id = %s")
+        values.append(update_details.prompt_id)
 
     if not set_parts:
         raise HTTPException(status_code=400, detail="No update fields provided")
